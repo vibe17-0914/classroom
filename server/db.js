@@ -1,7 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_FILE = path.join(__dirname, 'data', 'store.json');
+const DATA_FILE = process.env.VERCEL
+  ? path.join('/tmp', 'store.json')
+  : path.join(__dirname, 'data', 'store.json');
+
+const BUNDLED_FILE = path.join(__dirname, 'data', 'store.json');
 
 // 기본 학생 목록
 const DEFAULT_STUDENTS = [
@@ -32,6 +36,13 @@ const DEFAULT_SETTINGS = {
 function loadData() {
   try {
     if (!fs.existsSync(DATA_FILE)) {
+      if (process.env.VERCEL && fs.existsSync(BUNDLED_FILE)) {
+        try {
+          const bundledContent = fs.readFileSync(BUNDLED_FILE, 'utf-8');
+          fs.writeFileSync(DATA_FILE, bundledContent, 'utf-8');
+          return JSON.parse(bundledContent);
+        } catch (e) {}
+      }
       const initialData = {
         students: DEFAULT_STUDENTS,
         settings: DEFAULT_SETTINGS
