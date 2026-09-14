@@ -79,6 +79,38 @@ export async function fetchStudent(id) {
   return data.student || null;
 }
 
+export async function loginStudent(identifier, pin) {
+  const res = await fetch(`${API_BASE}/students/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId: identifier, pin })
+  });
+  return await res.json();
+}
+
+export async function updateStudentPin(id, pin) {
+  const res = await fetch(`${API_BASE}/students/${id}/pin`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin })
+  });
+  return await res.json();
+}
+
+export async function resetStudentPin(id) {
+  const res = await fetch(`${API_BASE}/students/${id}/reset-pin`, {
+    method: 'POST'
+  });
+  return await res.json();
+}
+
+export async function resetAllStudentPins() {
+  const res = await fetch(`${API_BASE}/students/reset-all-pins`, {
+    method: 'POST'
+  });
+  return await res.json();
+}
+
 export async function addStudent(studentData) {
   const res = await fetch(`${API_BASE}/students`, {
     method: 'POST',

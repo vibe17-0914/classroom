@@ -175,6 +175,51 @@ function updateStudent(id, updates) {
   return data.students[index];
 }
 
+// 학생 로그인 검증
+function verifyStudentLogin(identifier, pin) {
+  const data = loadData();
+  // identifier는 id 또는 studentNo
+  const student = data.students.find(s => s.id === identifier || String(s.studentNo) === String(identifier));
+  if (!student) {
+    throw new Error('해당 번호의 학생을 찾을 수 없습니다.');
+  }
+  const currentPin = student.pin || '1234';
+  if (String(currentPin).trim() !== String(pin).trim()) {
+    throw new Error('비밀번호가 올바르지 않습니다. (초기 비밀번호: 1234)');
+  }
+  return student;
+}
+
+// 학생 비밀번호 변경
+function updateStudentPin(id, newPin) {
+  const data = loadData();
+  const student = data.students.find(s => s.id === id);
+  if (!student) {
+    throw new Error('학생을 찾을 수 없습니다.');
+  }
+  if (!newPin || String(newPin).trim().length < 2) {
+    throw new Error('비밀번호는 최소 2자리 이상이어야 합니다.');
+  }
+  student.pin = String(newPin).trim();
+  saveData(data);
+  return student;
+}
+
+// 학생 비밀번호 단일 초기화
+function resetStudentPin(id, defaultPin = '1234') {
+  return updateStudentPin(id, defaultPin);
+}
+
+// 전체 학생 비밀번호 일괄 초기화
+function resetAllStudentPins(defaultPin = '1234') {
+  const data = loadData();
+  data.students.forEach(s => {
+    s.pin = String(defaultPin);
+  });
+  saveData(data);
+  return data.students.length;
+}
+
 function deleteStudent(id) {
   const data = loadData();
   const beforeLen = data.students.length;
@@ -583,6 +628,10 @@ module.exports = {
   getSettings,
   updateSettings,
   verifyAdmin,
+  verifyStudentLogin,
+  updateStudentPin,
+  resetStudentPin,
+  resetAllStudentPins,
   saveCustomStock,
   updateCustomStockPrice,
   triggerRandomFluctuation,

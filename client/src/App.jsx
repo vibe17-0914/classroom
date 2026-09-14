@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   TrendingUp, Wallet, Trophy, History, Shield, LogOut,
-  RefreshCw, CheckCircle, AlertCircle, Info, Lock
+  RefreshCw, CheckCircle, AlertCircle, Info, Lock, Key, UserCheck
 } from 'lucide-react';
 import StockList from './components/StockList.jsx';
 import StockDetailModal from './components/StockDetailModal.jsx';
@@ -10,6 +10,8 @@ import MyPortfolio from './components/MyPortfolio.jsx';
 import Leaderboard from './components/Leaderboard.jsx';
 import TradeHistory from './components/TradeHistory.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
+import StudentLogin from './components/StudentLogin.jsx';
+import ChangePinModal from './components/ChangePinModal.jsx';
 import {
   fetchStocks, fetchStudents, fetchStudent, loginAdmin, fetchAdminSettings
 } from './api.js';
@@ -17,7 +19,9 @@ import {
 export default function App() {
   const [stocks, setStocks] = useState([]);
   const [students, setStudents] = useState([]);
-  const [currentStudentId, setCurrentStudentId] = useState('');
+  const [currentStudentId, setCurrentStudentId] = useState(() => {
+    return localStorage.getItem('classroom_student_id') || '';
+  });
   const [currentStudent, setCurrentStudent] = useState(null);
   const [adminSettings, setAdminSettings] = useState({});
 
@@ -26,6 +30,9 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+
+  // 학생 비밀번호 변경 모달
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
 
   // 모달 상태
   const [selectedStockForDetail, setSelectedStockForDetail] = useState(null);
@@ -56,9 +63,16 @@ export default function App() {
       setStudents(studentList);
       setAdminSettings(settings);
 
-      // 첫 번째 학생을 기본 선택
-      if (studentList.length > 0 && !currentStudentId) {
-        setCurrentStudentId(studentList[0].id);
+      // 기존 로그인 정보가 유효한지 검증
+      const savedId = localStorage.getItem('classroom_student_id');
+      if (savedId) {
+        const found = studentList.find(s => s.id === savedId);
+        if (found) {
+          setCurrentStudentId(savedId);
+        } else {
+          localStorage.removeItem('classroom_student_id');
+          setCurrentStudentId('');
+        }
       }
     } catch (err) {
       console.error('Failed to load initial data:', err);
@@ -84,7 +98,10 @@ export default function App() {
 
   // 선택된 학생 변경 시 상세 정보 재조회
   useEffect(() => {
-    if (!currentStudentId) return;
+    if (!currentStudentId) {
+      setCurrentStudent(null);
+      return;
+    }
     fetchStudent(currentStudentId).then(data => {
       if (data) setCurrentStudent(data);
     });
@@ -99,6 +116,24 @@ export default function App() {
     setStudents(updatedList);
   };
 
+  // 학생 로그인 완료 핸들러
+  const handleStudentLoginSuccess = (student) => {
+    localStorage.setItem('classroom_student_id', student.id);
+    setCurrentStudentId(student.id);
+    setCurrentStudent(student);
+    setCurrentTab('STOCKS');
+    showToast(`${student.name} 학생으로 로그인되었습니다!`, 'success');
+  };
+
+  // 학생 로그아웃
+  const handleStudentLogout = () => {
+    localStorage.removeItem('classroom_student_id');
+    setCurrentStudentId('');
+    setCurrentStudent(null);
+    setCurrentTab('STOCKS');
+    showToast('로그아웃되었습니다.', 'info');
+  };
+
   // 관리자 로그인 핸들러
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -109,7 +144,7 @@ export default function App() {
         setShowAdminLoginModal(false);
         setAdminPasswordInput('');
         setCurrentTab('ADMIN');
-        showToast('관리자 모드로 전환되었습니다.', 'success');
+        showToast('선생님 관리자 모드로 전환되었습니다.', 'success');
       } else {
         showToast(res.message || '비밀번호가 올바르지 않습니다.', 'error');
       }
@@ -123,7 +158,7 @@ export default function App() {
       {/* ===================== 상단 네비게이션 헤더 ===================== */}
       <header className="main-header">
         {/* 로고 */}
-        <div className="logo-section">
+        <div className="logo-section" style={{ cursor: 'pointer' }} onClick={() => setCurrentTab('STOCKS')}>
           <div className="logo-badge">📈</div>
           <div>
             <div className="logo-title">우리 반 모의 주식 거래소</div>
@@ -131,75 +166,87 @@ export default function App() {
           </div>
         </div>
 
-        {/* 탭 네비게이션 */}
-        <nav className="nav-tabs">
-          <button
-            className={`nav-tab ${currentTab === 'STOCKS' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('STOCKS')}
-          >
-            <TrendingUp size={16} /> 시세표
-          </button>
-          <button
-            className={`nav-tab ${currentTab === 'PORTFOLIO' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('PORTFOLIO')}
-          >
-            <Wallet size={16} /> 내 투자
-          </button>
-          <button
-            className={`nav-tab ${currentTab === 'LEADERBOARD' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('LEADERBOARD')}
-          >
-            <Trophy size={16} /> 학급 랭킹
-          </button>
-          <button
-            className={`nav-tab ${currentTab === 'HISTORY' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('HISTORY')}
-          >
-            <History size={16} /> 체결 일지
-          </button>
-          {isAdmin && (
+        {/* 학생 또는 관리자가 로그인된 경우 탭 표시 */}
+        {(currentStudent || isAdmin) && (
+          <nav className="nav-tabs">
             <button
-              className={`nav-tab ${currentTab === 'ADMIN' ? 'active' : ''}`}
-              onClick={() => setCurrentTab('ADMIN')}
-              style={{ background: currentTab === 'ADMIN' ? '#9333ea' : 'transparent', color: '#c084fc' }}
+              className={`nav-tab ${currentTab === 'STOCKS' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('STOCKS')}
             >
-              <Shield size={16} /> 관리자 패널
+              <TrendingUp size={16} /> 시세표
             </button>
-          )}
-        </nav>
-
-        {/* 우측 프로필 및 관리자 전환 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          {/* 학생 선택 드롭다운 */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>내 계좌:</span>
-            <select
-              value={currentStudentId}
-              onChange={e => setCurrentStudentId(e.target.value)}
-              style={{ fontWeight: 600, height: 38 }}
+            <button
+              className={`nav-tab ${currentTab === 'PORTFOLIO' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('PORTFOLIO')}
             >
-              {students.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.studentNo}번 {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <Wallet size={16} /> 내 투자
+            </button>
+            <button
+              className={`nav-tab ${currentTab === 'LEADERBOARD' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('LEADERBOARD')}
+            >
+              <Trophy size={16} /> 학급 랭킹
+            </button>
+            <button
+              className={`nav-tab ${currentTab === 'HISTORY' ? 'active' : ''}`}
+              onClick={() => setCurrentTab('HISTORY')}
+            >
+              <History size={16} /> 체결 일지
+            </button>
+            {isAdmin && (
+              <button
+                className={`nav-tab ${currentTab === 'ADMIN' ? 'active' : ''}`}
+                onClick={() => setCurrentTab('ADMIN')}
+                style={{ background: currentTab === 'ADMIN' ? '#9333ea' : 'transparent', color: '#c084fc' }}
+              >
+                <Shield size={16} /> 관리자 패널
+              </button>
+            )}
+          </nav>
+        )}
 
-          {/* 현재 학생의 자산 뱃지 */}
-          {currentStudent && (
-            <div style={{
-              background: 'rgba(255,255,255,0.05)',
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: 13,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              border: '1px solid var(--border-subtle)'
-            }}>
-              <span style={{ color: 'var(--text-muted)' }}>현금:</span>
-              <strong style={{ color: '#10b981' }}>{currentStudent.cash?.toLocaleString()}원</strong>
+        {/* 우측 프로필 / 로그인 / 관리자 전환 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* 학생 로그인 상태 표시 (다른 학생 스위칭 불가) */}
+          {currentStudent && !isAdmin && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                background: 'rgba(99, 102, 241, 0.12)',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 13,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span style={{ fontWeight: 800, color: '#818cf8' }}>
+                  {currentStudent.studentNo}번 {currentStudent.name}
+                </span>
+                <span style={{ color: 'var(--border-subtle)' }}>|</span>
+                <span style={{ color: 'var(--text-muted)' }}>현금:</span>
+                <strong style={{ color: '#10b981' }}>{currentStudent.cash?.toLocaleString()}원</strong>
+              </div>
+
+              {/* 비밀번호 변경 버튼 */}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setShowChangePinModal(true)}
+                title="내 비밀번호 변경"
+                style={{ padding: '6px 10px' }}
+              >
+                <Key size={13} />
+              </button>
+
+              {/* 학생 로그아웃 버튼 */}
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={handleStudentLogout}
+                title="로그아웃"
+                style={{ padding: '6px 10px', color: 'var(--text-muted)' }}
+              >
+                <LogOut size={13} />
+              </button>
             </div>
           )}
 
@@ -230,55 +277,66 @@ export default function App() {
 
       {/* ===================== 메인 뷰 컨텐츠 ===================== */}
       <main>
-        {currentTab === 'STOCKS' && (
-          <StockList
-            stocks={stocks}
-            loading={loadingStocks}
-            onRefresh={async () => {
-              setLoadingStocks(true);
-              const updated = await fetchStocks();
-              setStocks(updated);
-              setLoadingStocks(false);
-              showToast('최신 주가 시세를 불러왔습니다.', 'info');
-            }}
-            onSelectStock={stock => setSelectedStockForDetail(stock)}
-            onQuickTrade={(stock, type) => setTradeModalConfig({ stock, type })}
-            student={currentStudent}
-          />
-        )}
-
-        {currentTab === 'PORTFOLIO' && (
-          <MyPortfolio
-            student={currentStudent}
-            stocks={stocks}
-            onQuickTrade={(stock, type) => setTradeModalConfig({ stock, type })}
-            onNavigateToStocks={() => setCurrentTab('STOCKS')}
-          />
-        )}
-
-        {currentTab === 'LEADERBOARD' && (
-          <Leaderboard currentStudentId={currentStudentId} />
-        )}
-
-        {currentTab === 'HISTORY' && (
-          <TradeHistory student={currentStudent} />
-        )}
-
-        {currentTab === 'ADMIN' && isAdmin && (
-          <AdminPanel
-            stocks={stocks}
+        {/* 학생도 관리자도 로그인하지 않은 경우 -> 학생 로그인 화면 제공 */}
+        {!currentStudent && !isAdmin ? (
+          <StudentLogin
             students={students}
-            adminSettings={adminSettings}
-            onDataChanged={() => {
-              loadData();
-              refreshCurrentStudent();
-            }}
+            onLoginSuccess={handleStudentLoginSuccess}
             showToast={showToast}
-            onExitAdmin={() => {
-              setIsAdmin(false);
-              setCurrentTab('STOCKS');
-            }}
           />
+        ) : (
+          <>
+            {currentTab === 'STOCKS' && (
+              <StockList
+                stocks={stocks}
+                loading={loadingStocks}
+                onRefresh={async () => {
+                  setLoadingStocks(true);
+                  const updated = await fetchStocks();
+                  setStocks(updated);
+                  setLoadingStocks(false);
+                  showToast('최신 주가 시세를 불러왔습니다.', 'info');
+                }}
+                onSelectStock={stock => setSelectedStockForDetail(stock)}
+                onQuickTrade={(stock, type) => setTradeModalConfig({ stock, type })}
+                student={currentStudent}
+              />
+            )}
+
+            {currentTab === 'PORTFOLIO' && (
+              <MyPortfolio
+                student={currentStudent}
+                stocks={stocks}
+                onQuickTrade={(stock, type) => setTradeModalConfig({ stock, type })}
+                onNavigateToStocks={() => setCurrentTab('STOCKS')}
+              />
+            )}
+
+            {currentTab === 'LEADERBOARD' && (
+              <Leaderboard currentStudentId={currentStudentId} />
+            )}
+
+            {currentTab === 'HISTORY' && (
+              <TradeHistory student={currentStudent} />
+            )}
+
+            {currentTab === 'ADMIN' && isAdmin && (
+              <AdminPanel
+                stocks={stocks}
+                students={students}
+                adminSettings={adminSettings}
+                onDataChanged={() => {
+                  loadData();
+                  refreshCurrentStudent();
+                }}
+                showToast={showToast}
+                onExitAdmin={() => {
+                  setIsAdmin(false);
+                  setCurrentTab('STOCKS');
+                }}
+              />
+            )}
+          </>
         )}
       </main>
 
@@ -300,6 +358,19 @@ export default function App() {
           student={currentStudent}
           onClose={() => setTradeModalConfig(null)}
           onTradeSuccess={(updatedStudent) => {
+            setCurrentStudent(updatedStudent);
+            refreshCurrentStudent();
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* ===================== 학생 비밀번호 변경 모달 ===================== */}
+      {showChangePinModal && currentStudent && (
+        <ChangePinModal
+          student={currentStudent}
+          onClose={() => setShowChangePinModal(false)}
+          onSuccess={(updatedStudent) => {
             setCurrentStudent(updatedStudent);
             refreshCurrentStudent();
           }}

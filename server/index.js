@@ -264,6 +264,67 @@ app.get('/api/students/:id', async (req, res) => {
   }
 });
 
+// 학생 로그인 (출석번호 또는 ID + PIN)
+app.post('/api/students/login', (req, res) => {
+  try {
+    const { studentId, studentNo, pin } = req.body;
+    if (!pin) {
+      return res.status(400).json({ success: false, message: '비밀번호(PIN)를 입력해주세요.' });
+    }
+    const student = db.verifyStudentLogin(studentId || studentNo, pin);
+    res.json({
+      success: true,
+      student,
+      message: `${student.name} 학생으로 로그인되었습니다!`
+    });
+  } catch (err) {
+    res.status(401).json({ success: false, message: err.message || '로그인에 실패했습니다.' });
+  }
+});
+
+// 학생 비밀번호 변경 (학생 본인 또는 관리자)
+app.put('/api/students/:id/pin', (req, res) => {
+  try {
+    const { pin } = req.body;
+    const updated = db.updateStudentPin(req.params.id, pin);
+    res.json({
+      success: true,
+      student: updated,
+      message: '비밀번호가 성공적으로 변경되었습니다.'
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message || '비밀번호 변경 실패' });
+  }
+});
+
+// 학생 개별 비밀번호 초기화 (관리자용: 기본값 1234로 리셋)
+app.post('/api/students/:id/reset-pin', (req, res) => {
+  try {
+    const updated = db.resetStudentPin(req.params.id, '1234');
+    res.json({
+      success: true,
+      student: updated,
+      message: `${updated.name} 학생의 비밀번호가 '1234'로 초기화되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '비밀번호 초기화 실패' });
+  }
+});
+
+// 전체 학생 비밀번호 일괄 초기화 (관리자용: 전체 1234 리셋)
+app.post('/api/students/reset-all-pins', (req, res) => {
+  try {
+    const count = db.resetAllStudentPins('1234');
+    res.json({
+      success: true,
+      count,
+      message: `전체 ${count}명 학생의 비밀번호가 '1234'로 초기화되었습니다.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '전체 비밀번호 초기화 실패' });
+  }
+});
+
 // 학생 단일 추가
 app.post('/api/students', (req, res) => {
   try {

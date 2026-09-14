@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import {
   Layers, Users, Settings, Plus, Search, Trash2, Edit3,
   RotateCcw, CheckCircle2, AlertTriangle, ShieldCheck, Power,
-  DollarSign, TrendingUp, TrendingDown, Sparkles, Dices, Clock
+  DollarSign, TrendingUp, TrendingDown, Sparkles, Dices, Clock,
+  Key, Lock
 } from 'lucide-react';
 import {
   addStock, updateStock, deleteStock, restoreDefaultStocks, searchStock, updateStockPrice,
   triggerFluctuation, addStudent, batchAddStudents, updateStudent, deleteStudent, resetStudents,
-  updateAdminSettings
+  updateAdminSettings, resetStudentPin, resetAllStudentPins, updateStudentPin
 } from '../api.js';
 
 export default function AdminPanel({
@@ -38,6 +39,7 @@ export default function AdminPanel({
   const [newStudent, setNewStudent] = useState({
     studentNo: '',
     name: '',
+    pin: '1234',
     seedMoney: adminSettings.defaultSeedMoney || 1000000
   });
   const [batchText, setBatchText] = useState('');
@@ -287,6 +289,38 @@ export default function AdminPanel({
       }
     } catch (err) {
       showToast('초기화 실패', 'error');
+    }
+  };
+
+  // 학생 개별 비밀번호 1234로 초기화
+  const handleResetPin = async (id, name) => {
+    if (!window.confirm(`'${name}' 학생의 비밀번호를 기본값 '1234'로 초기화하시겠습니까?`)) return;
+    try {
+      const res = await resetStudentPin(id);
+      if (res.success) {
+        showToast(res.message, 'success');
+        onDataChanged();
+      } else {
+        showToast(res.message || '초기화 실패', 'error');
+      }
+    } catch (err) {
+      showToast('비밀번호 초기화 처리 오류', 'error');
+    }
+  };
+
+  // 전체 학생 비밀번호 일괄 1234로 초기화
+  const handleResetAllPins = async () => {
+    if (!window.confirm("모든 학생의 비밀번호를 기본값 '1234'로 일괄 초기화하시겠습니까?")) return;
+    try {
+      const res = await resetAllStudentPins();
+      if (res.success) {
+        showToast(res.message, 'success');
+        onDataChanged();
+      } else {
+        showToast('일괄 초기화 실패', 'error');
+      }
+    } catch (err) {
+      showToast('비밀번호 일괄 초기화 오류', 'error');
     }
   };
 
@@ -823,6 +857,18 @@ export default function AdminPanel({
 
               <div>
                 <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  초기 비밀번호 (PIN)
+                </label>
+                <input
+                  type="text"
+                  placeholder="기본값: 1234"
+                  value={newStudent.pin || '1234'}
+                  onChange={e => setNewStudent({ ...newStudent, pin: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
                   초기 시드머니 (원)
                 </label>
                 <input
@@ -837,21 +883,40 @@ export default function AdminPanel({
               </button>
             </form>
 
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border-subtle)' }}>
-              <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--rise)', marginBottom: 6 }}>
-                ⚠️ 학급 계좌 일괄 리셋
-              </h4>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
-                새 학기 또는 새로운 모의 게임을 시작할 때, 모든 학생의 보유 주식을 정리하고 초기 시드머니로 리셋합니다.
-              </p>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => handleResetStudents(null)}
-                style={{ color: 'var(--rise)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
-              >
-                <RotateCcw size={14} /> 전체 학생 잔고 초기화
-              </button>
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#a855f7', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Key size={14} /> 학생 비밀번호 일괄 초기화
+                </h4>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                  아이들이 비밀번호를 잊어버렸을 때, 전체 학생 비밀번호를 '1234'로 한 번에 리셋합니다.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleResetAllPins}
+                  style={{ color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.4)' }}
+                >
+                  <Key size={13} /> 전체 비밀번호 1234로 초기화
+                </button>
+              </div>
+
+              <div style={{ borderTop: '1px dashed var(--border-subtle)', paddingTop: 12 }}>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--rise)', marginBottom: 4 }}>
+                  ⚠️ 학급 계좌 일괄 리셋
+                </h4>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                  모든 학생의 보유 주식을 정리하고 초기 시드머니로 리셋합니다.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleResetStudents(null)}
+                  style={{ color: 'var(--rise)', borderColor: 'rgba(244, 63, 94, 0.3)' }}
+                >
+                  <RotateCcw size={13} /> 전체 학생 잔고 초기화
+                </button>
+              </div>
             </div>
           </div>
 
@@ -861,7 +926,7 @@ export default function AdminPanel({
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 800 }}>우리 반 학생 명단 ({students.length}명)</h3>
                 <p style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  학생들의 출석번호, 이름, 잔고를 수정하거나 개별 초기화할 수 있습니다.
+                  학생들의 출석번호, 이름, 비밀번호(PIN), 잔고를 수정하거나 개별 초기화할 수 있습니다.
                 </p>
               </div>
             </div>
@@ -872,10 +937,11 @@ export default function AdminPanel({
                   <tr>
                     <th style={{ width: 60, textAlign: 'center' }}>번호</th>
                     <th>이름</th>
+                    <th style={{ textAlign: 'center', width: 140 }}>비밀번호 (PIN)</th>
                     <th style={{ textAlign: 'right' }}>보유 현금</th>
                     <th style={{ textAlign: 'right' }}>총 자산</th>
                     <th style={{ textAlign: 'right' }}>수익률</th>
-                    <th style={{ textAlign: 'center', width: 120 }}>관리</th>
+                    <th style={{ textAlign: 'center', width: 130 }}>관리</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -886,6 +952,29 @@ export default function AdminPanel({
                       </td>
                       <td style={{ fontWeight: 700, fontSize: 15 }}>
                         {s.name}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{
+                            fontFamily: 'monospace',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            background: 'rgba(255,255,255,0.06)',
+                            borderRadius: 4,
+                            color: '#cbd5e1'
+                          }}>
+                            {s.pin || '1234'}
+                          </span>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ padding: '2px 6px', fontSize: 10, borderColor: 'rgba(168,85,247,0.3)', color: '#c084fc' }}
+                            onClick={() => handleResetPin(s.id, s.name)}
+                            title="비밀번호 1234로 초기화"
+                          >
+                            초기화
+                          </button>
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
                         {s.cash?.toLocaleString()}원
@@ -904,7 +993,7 @@ export default function AdminPanel({
                             className="btn-ghost"
                             onClick={() => setEditingStudent(s)}
                             style={{ padding: 6 }}
-                            title="정보 수정"
+                            title="정보 및 비밀번호 수정"
                           >
                             <Edit3 size={15} />
                           </button>
@@ -912,7 +1001,7 @@ export default function AdminPanel({
                             className="btn-ghost"
                             onClick={() => handleResetStudents(s.id)}
                             style={{ padding: 6, color: '#f59e0b' }}
-                            title="계좌 초기화"
+                            title="계좌 잔고 초기화"
                           >
                             <RotateCcw size={15} />
                           </button>
@@ -1121,6 +1210,18 @@ export default function AdminPanel({
                   type="number"
                   value={editingStudent.cash}
                   onChange={e => setEditingStudent({ ...editingStudent, cash: Number(e.target.value) })}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                  비밀번호 (PIN)
+                </label>
+                <input
+                  type="text"
+                  placeholder="예: 1234"
+                  value={editingStudent.pin || '1234'}
+                  onChange={e => setEditingStudent({ ...editingStudent, pin: e.target.value })}
                 />
               </div>
 
