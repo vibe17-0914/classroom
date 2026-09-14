@@ -23,7 +23,7 @@ app.use((req, res, next) => {
 // 1. 전체 종목 목록 및 실시간 주가 조회
 app.get('/api/stocks', async (req, res) => {
   try {
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     const stocks = await stockService.getAllStocksWithPrices(settings.customStocks || []);
     res.json({ success: true, stocks });
   } catch (err) {
@@ -36,7 +36,7 @@ app.get('/api/stocks', async (req, res) => {
 app.get('/api/stocks/:code/chart', async (req, res) => {
   try {
     const { code } = req.params;
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     const chartData = await stockService.fetchStockChart(code, settings.customStocks || []);
     res.json({ success: true, code, chart: chartData });
   } catch (err) {
@@ -46,7 +46,7 @@ app.get('/api/stocks/:code/chart', async (req, res) => {
 });
 
 // 관리자: 커스텀 종목 가격 변동
-app.put('/api/stocks/:code/price', (req, res) => {
+app.put('/api/stocks/:code/price', async (req, res) => {
   try {
     const { code } = req.params;
     const { price, reason, autoFluctuate, fluctuateInterval, fluctuateRange } = req.body;
@@ -58,7 +58,7 @@ app.put('/api/stocks/:code/price', (req, res) => {
     if (fluctuateInterval !== undefined) extraOpts.fluctuateInterval = Number(fluctuateInterval);
     if (fluctuateRange !== undefined) extraOpts.fluctuateRange = Number(fluctuateRange);
 
-    const updated = db.updateCustomStockPrice(code, price, reason, extraOpts);
+    const updated = await db.updateCustomStockPrice(code, price, reason, extraOpts);
     res.json({
       success: true,
       stock: updated,
@@ -70,10 +70,10 @@ app.put('/api/stocks/:code/price', (req, res) => {
 });
 
 // 관리자: 랜덤 가격 변동 트리거 (즉시 실행 또는 특정 종목)
-app.post('/api/stocks/fluctuate', (req, res) => {
+app.post('/api/stocks/fluctuate', async (req, res) => {
   try {
     const { code, force = true } = req.body;
-    const updatedList = db.triggerRandomFluctuation(code || null, !!force);
+    const updatedList = await db.triggerRandomFluctuation(code || null, !!force);
     res.json({
       success: true,
       updated: updatedList,
@@ -112,7 +112,6 @@ app.post('/api/stocks', async (req, res) => {
       return res.status(400).json({ success: false, message: '종목코드를 입력해주세요.' });
     }
 
-    // 네이버에서 기본 정보 확인 (수동 가격이 아닐 경우)
     let realInfo = null;
     if (!isManualPrice) {
       realInfo = await stockService.fetchStockDetail(code);
@@ -131,7 +130,7 @@ app.post('/api/stocks', async (req, res) => {
       deleted: false
     };
 
-    db.saveCustomStock(stockData);
+    await db.saveCustomStock(stockData);
     res.json({ success: true, stock: stockData, message: '종목이 성공적으로 추가/저장되었습니다.' });
   } catch (err) {
     console.error('POST /stocks error:', err);
@@ -140,7 +139,7 @@ app.post('/api/stocks', async (req, res) => {
 });
 
 // 5. 관리자: 종목 수정
-app.put('/api/stocks/:code', (req, res) => {
+app.put('/api/stocks/:code', async (req, res) => {
   try {
     const { code } = req.params;
     const {
@@ -159,7 +158,7 @@ app.put('/api/stocks/:code', (req, res) => {
     if (fluctuateInterval !== undefined) updateObj.fluctuateInterval = Number(fluctuateInterval);
     if (fluctuateRange !== undefined) updateObj.fluctuateRange = Number(fluctuateRange);
 
-    const updated = db.saveCustomStock(updateObj);
+    const updated = await db.saveCustomStock(updateObj);
     res.json({ success: true, stock: updated, message: '종목 정보가 수정되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '종목 수정에 실패했습니다.' });
@@ -167,10 +166,10 @@ app.put('/api/stocks/:code', (req, res) => {
 });
 
 // 6. 관리자: 종목 삭제
-app.delete('/api/stocks/:code', (req, res) => {
+app.delete('/api/stocks/:code', async (req, res) => {
   try {
     const { code } = req.params;
-    db.deleteCustomStock(code);
+    await db.deleteCustomStock(code);
     res.json({ success: true, message: '종목이 삭제되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '종목 삭제에 실패했습니다.' });
@@ -178,9 +177,9 @@ app.delete('/api/stocks/:code', (req, res) => {
 });
 
 // 7. 관리자: 기본 KOSPI 20 종목으로 초기화
-app.post('/api/stocks/restore', (req, res) => {
+app.post('/api/stocks/restore', async (req, res) => {
   try {
-    db.restoreDefaultStocks();
+    await db.restoreDefaultStocks();
     res.json({ success: true, message: '기본 KOSPI 상위 20개 종목으로 복원되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '종목 초기화에 실패했습니다.' });
@@ -192,12 +191,12 @@ app.post('/api/stocks/restore', (req, res) => {
 // 전체 학생 목록
 app.get('/api/students', async (req, res) => {
   try {
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     const stocks = await stockService.getAllStocksWithPrices(settings.customStocks || []);
     const priceMap = {};
     stocks.forEach(s => { priceMap[s.code] = s.price; });
 
-    const students = db.getStudents();
+    const students = await db.getStudents();
     const studentsWithSummary = students.map(s => {
       const assetInfo = db.calculateStudentTotalAsset(s, priceMap);
       return {
@@ -216,12 +215,12 @@ app.get('/api/students', async (req, res) => {
 // 개별 학생 상세 (포트폴리오 실시간 가치 반영)
 app.get('/api/students/:id', async (req, res) => {
   try {
-    const student = db.getStudentById(req.params.id);
+    const student = await db.getStudentById(req.params.id);
     if (!student) {
       return res.status(404).json({ success: false, message: '학생을 찾을 수 없습니다.' });
     }
 
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     const stocks = await stockService.getAllStocksWithPrices(settings.customStocks || []);
     const priceMap = {};
     const stockMap = {};
@@ -273,13 +272,13 @@ app.get('/api/students/:id', async (req, res) => {
 });
 
 // 학생 로그인 (출석번호 또는 ID + PIN)
-app.post('/api/students/login', (req, res) => {
+app.post('/api/students/login', async (req, res) => {
   try {
     const { studentId, studentNo, pin } = req.body;
     if (!pin) {
       return res.status(400).json({ success: false, message: '비밀번호(PIN)를 입력해주세요.' });
     }
-    const student = db.verifyStudentLogin(studentId || studentNo, pin);
+    const student = await db.verifyStudentLogin(studentId || studentNo, pin);
     res.json({
       success: true,
       student,
@@ -291,10 +290,10 @@ app.post('/api/students/login', (req, res) => {
 });
 
 // 학생 비밀번호 변경 (학생 본인 또는 관리자)
-app.put('/api/students/:id/pin', (req, res) => {
+app.put('/api/students/:id/pin', async (req, res) => {
   try {
     const { pin } = req.body;
-    const updated = db.updateStudentPin(req.params.id, pin);
+    const updated = await db.updateStudentPin(req.params.id, pin);
     res.json({
       success: true,
       student: updated,
@@ -306,9 +305,9 @@ app.put('/api/students/:id/pin', (req, res) => {
 });
 
 // 학생 개별 비밀번호 초기화 (관리자용: 기본값 1234로 리셋)
-app.post('/api/students/:id/reset-pin', (req, res) => {
+app.post('/api/students/:id/reset-pin', async (req, res) => {
   try {
-    const updated = db.resetStudentPin(req.params.id, '1234');
+    const updated = await db.resetStudentPin(req.params.id, '1234');
     res.json({
       success: true,
       student: updated,
@@ -320,9 +319,9 @@ app.post('/api/students/:id/reset-pin', (req, res) => {
 });
 
 // 전체 학생 비밀번호 일괄 초기화 (관리자용: 전체 1234 리셋)
-app.post('/api/students/reset-all-pins', (req, res) => {
+app.post('/api/students/reset-all-pins', async (req, res) => {
   try {
-    const count = db.resetAllStudentPins('1234');
+    const count = await db.resetAllStudentPins('1234');
     res.json({
       success: true,
       count,
@@ -334,13 +333,13 @@ app.post('/api/students/reset-all-pins', (req, res) => {
 });
 
 // 학생 단일 추가
-app.post('/api/students', (req, res) => {
+app.post('/api/students', async (req, res) => {
   try {
     const { name, studentNo, pin, seedMoney } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ success: false, message: '학생 이름을 입력해주세요.' });
     }
-    const student = db.addStudent({ name, studentNo, pin, seedMoney });
+    const student = await db.addStudent({ name, studentNo, pin, seedMoney });
     res.json({ success: true, student, message: `${student.name} 학생이 등록되었습니다.` });
   } catch (err) {
     res.status(500).json({ success: false, message: '학생 추가에 실패했습니다.' });
@@ -348,14 +347,14 @@ app.post('/api/students', (req, res) => {
 });
 
 // 학생 일괄 등록 (명단 텍스트)
-app.post('/api/students/batch', (req, res) => {
+app.post('/api/students/batch', async (req, res) => {
   try {
     const { namesText, seedMoney } = req.body;
     if (!namesText || !namesText.trim()) {
       return res.status(400).json({ success: false, message: '등록할 학생 명단을 입력해주세요.' });
     }
     const lines = namesText.split('\n').map(l => l.trim()).filter(Boolean);
-    const added = db.batchAddStudents(lines, seedMoney);
+    const added = await db.batchAddStudents(lines, seedMoney);
     res.json({ success: true, count: added.length, students: added, message: `${added.length}명의 학생이 일괄 등록되었습니다.` });
   } catch (err) {
     res.status(500).json({ success: false, message: '학생 일괄 등록에 실패했습니다.' });
@@ -363,9 +362,9 @@ app.post('/api/students/batch', (req, res) => {
 });
 
 // 학생 정보 수정
-app.put('/api/students/:id', (req, res) => {
+app.put('/api/students/:id', async (req, res) => {
   try {
-    const updated = db.updateStudent(req.params.id, req.body);
+    const updated = await db.updateStudent(req.params.id, req.body);
     if (!updated) {
       return res.status(404).json({ success: false, message: '학생을 찾을 수 없습니다.' });
     }
@@ -376,9 +375,9 @@ app.put('/api/students/:id', (req, res) => {
 });
 
 // 학생 삭제
-app.delete('/api/students/:id', (req, res) => {
+app.delete('/api/students/:id', async (req, res) => {
   try {
-    const success = db.deleteStudent(req.params.id);
+    const success = await db.deleteStudent(req.params.id);
     res.json({ success, message: success ? '학생이 삭제되었습니다.' : '학생을 찾을 수 없습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '학생 삭제에 실패했습니다.' });
@@ -386,13 +385,13 @@ app.delete('/api/students/:id', (req, res) => {
 });
 
 // 학생 목록 일괄 동기화 (클라이언트 상태 보존 및 Vercel 다중 인스턴스 동기화)
-app.post('/api/students/sync', (req, res) => {
+app.post('/api/students/sync', async (req, res) => {
   try {
     const { students } = req.body;
     if (!Array.isArray(students)) {
       return res.status(400).json({ success: false, message: '학생 배열이 필요합니다.' });
     }
-    const synced = db.syncStudents(students);
+    const synced = await db.syncStudents(students);
     res.json({ success: true, count: synced.length, students: synced, message: '학생 목록이 동기화되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '학생 목록 동기화 실패' });
@@ -400,10 +399,10 @@ app.post('/api/students/sync', (req, res) => {
 });
 
 // 학생 계좌 초기화 (전체 또는 개별)
-app.post('/api/students/reset', (req, res) => {
+app.post('/api/students/reset', async (req, res) => {
   try {
     const { studentId, seedMoney } = req.body;
-    db.resetStudentPortfolio(studentId || null, seedMoney || null);
+    await db.resetStudentPortfolio(studentId || null, seedMoney || null);
     res.json({ success: true, message: studentId ? '해당 학생의 계좌가 초기화되었습니다.' : '전체 학생의 계좌가 초기화되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '계좌 초기화에 실패했습니다.' });
@@ -416,7 +415,7 @@ app.post('/api/trade', async (req, res) => {
   try {
     const { studentId, type, stockCode, stockName, count, price } = req.body;
 
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     if (!settings.allowTrading) {
       return res.status(400).json({ success: false, message: '현재 선생님이 거래를 일시 중지했습니다.' });
     }
@@ -425,7 +424,7 @@ app.post('/api/trade', async (req, res) => {
       return res.status(400).json({ success: false, message: '필수 거래 정보가 누락되었습니다.' });
     }
 
-    const result = db.executeTrade(studentId, {
+    const result = await db.executeTrade(studentId, {
       type,
       stockCode,
       stockName,
@@ -449,12 +448,12 @@ app.post('/api/trade', async (req, res) => {
 
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const settings = db.getSettings();
+    const settings = await db.getSettings();
     const stocks = await stockService.getAllStocksWithPrices(settings.customStocks || []);
     const priceMap = {};
     stocks.forEach(s => { priceMap[s.code] = s.price; });
 
-    const leaderboard = db.getLeaderboard(priceMap);
+    const leaderboard = await db.getLeaderboard(priceMap);
     res.json({ success: true, leaderboard });
   } catch (err) {
     console.error('GET /leaderboard error:', err);
@@ -464,9 +463,9 @@ app.get('/api/leaderboard', async (req, res) => {
 
 // ================== 관리자 인증 및 설정 API ==================
 
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { password } = req.body;
-  const isMatch = db.verifyAdmin(password);
+  const isMatch = await db.verifyAdmin(password);
   if (isMatch) {
     res.json({ success: true, message: '관리자로 로그인되었습니다.' });
   } else {
@@ -474,14 +473,14 @@ app.post('/api/admin/login', (req, res) => {
   }
 });
 
-app.get('/api/admin/settings', (req, res) => {
-  const settings = db.getSettings();
+app.get('/api/admin/settings', async (req, res) => {
+  const settings = await db.getSettings();
   res.json({ success: true, settings });
 });
 
-app.put('/api/admin/settings', (req, res) => {
+app.put('/api/admin/settings', async (req, res) => {
   try {
-    const updated = db.updateSettings(req.body);
+    const updated = await db.updateSettings(req.body);
     res.json({ success: true, settings: updated, message: '설정이 저장되었습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '설정 저장에 실패했습니다.' });
@@ -497,9 +496,9 @@ app.get('*', (req, res) => {
 });
 
 // 10초마다 자동 가격 변동 체크 (설정된 분 주기에 도달한 커스텀 종목 자동 갱신)
-setInterval(() => {
+setInterval(async () => {
   try {
-    db.triggerRandomFluctuation(null, false);
+    await db.triggerRandomFluctuation(null, false);
   } catch (e) {
     console.error('Auto fluctuation check error:', e.message);
   }

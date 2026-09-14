@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const supabase = require('./supabase');
 
 const DATA_FILE = process.env.VERCEL
   ? path.join('/tmp', 'store.json')
@@ -24,17 +25,77 @@ const DEFAULT_STUDENTS = [
 const DEFAULT_SETTINGS = {
   adminPassword: 'admin',
   defaultSeedMoney: 1000000,
-  marketStatus: 'OPEN', // OPEN or CLOSED
+  marketStatus: 'OPEN',
   allowTrading: true,
-  autoFluctuateCustom: false, // 커스텀 종목 랜덤 자동 변동
-  fluctuationIntervalMinutes: 3, // 변동 주기 (분)
-  fluctuationRangePercent: 5, // 최대 변동률 (+-5%)
+  autoFluctuateCustom: false,
+  fluctuationIntervalMinutes: 3,
+  fluctuationRangePercent: 5,
   customStocks: []
 };
 
 let globalData = global._classroomData || null;
 
-// DB 초기화 및 읽기
+// ================== DB 매퍼 헬퍼 ==================
+
+function toStudentObj(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    studentNo: Number(row.student_no),
+    name: row.name,
+    pin: row.pin || '1234',
+    seedMoney: Number(row.seed_money || 1000000),
+    cash: Number(row.cash !== undefined ? row.cash : (row.seed_money || 1000000)),
+    portfolio: typeof row.portfolio === 'object' && row.portfolio !== null ? row.portfolio : {},
+    tradeHistory: Array.isArray(row.trade_history) ? row.trade_history : []
+  };
+}
+
+function toStudentRow(student) {
+  return {
+    id: student.id,
+    student_no: Number(student.studentNo),
+    name: student.name,
+    pin: student.pin || '1234',
+    seed_money: Number(student.seedMoney || 1000000),
+    cash: Number(student.cash !== undefined ? student.cash : 1000000),
+    portfolio: student.portfolio || {},
+    trade_history: student.tradeHistory || [],
+    updated_at: new Date().toISOString()
+  };
+}
+
+function toSettingsObj(row) {
+  if (!row) return DEFAULT_SETTINGS;
+  return {
+    adminPassword: row.admin_password || DEFAULT_SETTINGS.adminPassword,
+    defaultSeedMoney: Number(row.default_seed_money || DEFAULT_SETTINGS.defaultSeedMoney),
+    marketStatus: row.market_status || DEFAULT_SETTINGS.marketStatus,
+    allowTrading: row.allow_trading !== undefined ? !!row.allow_trading : DEFAULT_SETTINGS.allowTrading,
+    autoFluctuateCustom: row.auto_fluctuate_custom !== undefined ? !!row.auto_fluctuate_custom : DEFAULT_SETTINGS.autoFluctuateCustom,
+    fluctuationIntervalMinutes: Number(row.fluctuation_interval_minutes || DEFAULT_SETTINGS.fluctuationIntervalMinutes),
+    fluctuationRangePercent: Number(row.fluctuation_range_percent || DEFAULT_SETTINGS.fluctuationRangePercent),
+    customStocks: Array.isArray(row.custom_stocks) ? row.custom_stocks : []
+  };
+}
+
+function toSettingsRow(settings) {
+  return {
+    id: 'global',
+    admin_password: settings.adminPassword || 'admin',
+    default_seed_money: Number(settings.defaultSeedMoney || 1000000),
+    market_status: settings.marketStatus || 'OPEN',
+    allow_trading: settings.allowTrading !== undefined ? !!settings.allowTrading : true,
+    auto_fluctuate_custom: !!settings.autoFluctuateCustom,
+    fluctuation_interval_minutes: Number(settings.fluctuationIntervalMinutes || 3),
+    fluctuation_range_percent: Number(settings.fluctuationRangePercent || 5),
+    custom_stocks: settings.customStocks || [],
+    updated_at: new Date().toISOString()
+  };
+}
+
+// ================== 로컬 파일 캐시 관리 ==================
+
 function loadData() {
   if (globalData) {
     return globalData;
@@ -83,7 +144,6 @@ function loadData() {
   }
 }
 
-// DB 저장
 function saveData(data) {
   globalData = data;
   global._classroomData = data;
@@ -98,49 +158,94 @@ function saveData(data) {
   }
 }
 
-// ================== 학생 관리 ==================
+// ================== 학생 관리 (비동기 / Supabase 우선) ==================
 
-function getStudents() {
-  const data = loadData();
-  return data.students;
+async function getStudents() {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .order('student_no', { ascending: true });
+      if (!error && Array.isArray(data)) {
+        const students = data.map(toStudentObj);
+        const current = loadData();
+        current.students = students;
+        saveData(current);
+        return students;
+      } else if (error) {
+        console.error('Supabase getStudents error:', error.message);
+      }
+    } catch (e) {
+      console.error('Supabase getStudents exception:', e.message);
+    }
+  }
+  const local = loadData();
+  return local.students;
 }
 
-function getStudentById(id) {
+async function getStudentById(id) {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('students')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (!error && data) {
+        return toStudentObj(data);
+      }
+    } catch (e) {
+      console.error('Supabase getStudentById exception:', e.message);
+    }
+  }
   const data = loadData();
   return data.students.find(s => s.id === id) || null;
 }
 
-function addStudent(studentData) {
-  const data = loadData();
-  const nextNo = studentData.studentNo || (data.students.length > 0 ? Math.max(...data.students.map(s => s.studentNo || 0)) + 1 : 1);
+async function addStudent(studentData) {
+  const currentStudents = await getStudents();
+  const nextNo = studentData.studentNo || (currentStudents.length > 0 ? Math.max(...currentStudents.map(s => s.studentNo || 0)) + 1 : 1);
+  const settings = await getSettings();
+
   const newStudent = {
     id: 'stu-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
     studentNo: Number(nextNo),
     name: studentData.name.trim(),
     pin: studentData.pin || '1234',
-    seedMoney: Number(studentData.seedMoney || data.settings.defaultSeedMoney || 1000000),
-    cash: Number(studentData.seedMoney || data.settings.defaultSeedMoney || 1000000),
+    seedMoney: Number(studentData.seedMoney || settings.defaultSeedMoney || 1000000),
+    cash: Number(studentData.seedMoney || settings.defaultSeedMoney || 1000000),
     portfolio: {},
     tradeHistory: []
   };
-  data.students.push(newStudent);
-  // 번호순 정렬
-  data.students.sort((a, b) => a.studentNo - b.studentNo);
-  saveData(data);
+
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .insert([toStudentRow(newStudent)]);
+      if (error) console.error('Supabase addStudent error:', error.message);
+    } catch (e) {
+      console.error('Supabase addStudent exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  local.students.push(newStudent);
+  local.students.sort((a, b) => a.studentNo - b.studentNo);
+  saveData(local);
   return newStudent;
 }
 
-// 일괄 학생 등록 (여러 줄 텍스트: "1번 김철수" 또는 "김철수" 등)
-function batchAddStudents(lines, defaultSeed = 1000000) {
-  const data = loadData();
-  let currentMaxNo = data.students.length > 0 ? Math.max(...data.students.map(s => s.studentNo || 0)) : 0;
+async function batchAddStudents(lines, defaultSeed = 1000000) {
+  const currentStudents = await getStudents();
+  let currentMaxNo = currentStudents.length > 0 ? Math.max(...currentStudents.map(s => s.studentNo || 0)) : 0;
   const added = [];
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (!line) continue;
 
-    // 번호와 이름 파싱 시도 (예: "1. 김철수", "1 김철수", "김철수")
     const match = line.match(/^(\d+)[\.\s번\-:]+\s*(.+)$/);
     let no, name;
     if (match) {
@@ -152,10 +257,8 @@ function batchAddStudents(lines, defaultSeed = 1000000) {
       name = line;
     }
 
-    // 중복 번호 체크
-    const existingIndex = data.students.findIndex(s => s.studentNo === no);
+    const existingIndex = currentStudents.findIndex(s => s.studentNo === no);
     if (existingIndex >= 0) {
-      // 이미 번호가 있으면 이름만 갱신하거나 새 번호 부여
       currentMaxNo += 1;
       no = currentMaxNo;
     }
@@ -170,39 +273,65 @@ function batchAddStudents(lines, defaultSeed = 1000000) {
       portfolio: {},
       tradeHistory: []
     };
-    data.students.push(student);
+    currentStudents.push(student);
     added.push(student);
   }
 
-  data.students.sort((a, b) => a.studentNo - b.studentNo);
-  saveData(data);
+  if (supabase && added.length > 0) {
+    try {
+      const rows = added.map(toStudentRow);
+      const { error } = await supabase.from('students').insert(rows);
+      if (error) console.error('Supabase batchAddStudents error:', error.message);
+    } catch (e) {
+      console.error('Supabase batchAddStudents exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  local.students = currentStudents;
+  local.students.sort((a, b) => a.studentNo - b.studentNo);
+  saveData(local);
   return added;
 }
 
-function updateStudent(id, updates) {
-  const data = loadData();
-  const index = data.students.findIndex(s => s.id === id);
-  if (index === -1) return null;
+async function updateStudent(id, updates) {
+  const student = await getStudentById(id);
+  if (!student) return null;
 
-  const current = data.students[index];
-  data.students[index] = {
-    ...current,
-    name: updates.name !== undefined ? updates.name.trim() : current.name,
-    studentNo: updates.studentNo !== undefined ? Number(updates.studentNo) : current.studentNo,
-    pin: updates.pin !== undefined ? updates.pin : current.pin,
-    seedMoney: updates.seedMoney !== undefined ? Number(updates.seedMoney) : current.seedMoney,
-    cash: updates.cash !== undefined ? Number(updates.cash) : current.cash
+  const updatedStudent = {
+    ...student,
+    name: updates.name !== undefined ? updates.name.trim() : student.name,
+    studentNo: updates.studentNo !== undefined ? Number(updates.studentNo) : student.studentNo,
+    pin: updates.pin !== undefined ? updates.pin : student.pin,
+    seedMoney: updates.seedMoney !== undefined ? Number(updates.seedMoney) : student.seedMoney,
+    cash: updates.cash !== undefined ? Number(updates.cash) : student.cash
   };
-  data.students.sort((a, b) => a.studentNo - b.studentNo);
-  saveData(data);
-  return data.students[index];
+
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update(toStudentRow(updatedStudent))
+        .eq('id', id);
+      if (error) console.error('Supabase updateStudent error:', error.message);
+    } catch (e) {
+      console.error('Supabase updateStudent exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  const idx = local.students.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    local.students[idx] = updatedStudent;
+    local.students.sort((a, b) => a.studentNo - b.studentNo);
+    saveData(local);
+  }
+  return updatedStudent;
 }
 
-// 학생 로그인 검증
-function verifyStudentLogin(identifier, pin) {
-  const data = loadData();
-  // identifier는 id 또는 studentNo
-  const student = data.students.find(s => s.id === identifier || String(s.studentNo) === String(identifier));
+async function verifyStudentLogin(identifier, pin) {
+  const students = await getStudents();
+  const student = students.find(s => s.id === identifier || String(s.studentNo) === String(identifier));
   if (!student) {
     throw new Error('해당 번호의 학생을 찾을 수 없습니다.');
   }
@@ -213,83 +342,141 @@ function verifyStudentLogin(identifier, pin) {
   return student;
 }
 
-// 학생 비밀번호 변경
-function updateStudentPin(id, newPin) {
-  const data = loadData();
-  const student = data.students.find(s => s.id === id);
-  if (!student) {
-    throw new Error('학생을 찾을 수 없습니다.');
-  }
+async function updateStudentPin(id, newPin) {
   if (!newPin || String(newPin).trim().length < 2) {
     throw new Error('비밀번호는 최소 2자리 이상이어야 합니다.');
   }
+  const student = await getStudentById(id);
+  if (!student) {
+    throw new Error('학생을 찾을 수 없습니다.');
+  }
   student.pin = String(newPin).trim();
-  saveData(data);
+
+  if (supabase) {
+    try {
+      await supabase.from('students').update({ pin: student.pin, updated_at: new Date().toISOString() }).eq('id', id);
+    } catch (e) {
+      console.error('Supabase updateStudentPin exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  const idx = local.students.findIndex(s => s.id === id);
+  if (idx !== -1) {
+    local.students[idx].pin = student.pin;
+    saveData(local);
+  }
   return student;
 }
 
-// 학생 비밀번호 단일 초기화
-function resetStudentPin(id, defaultPin = '1234') {
-  return updateStudentPin(id, defaultPin);
+async function resetStudentPin(id, defaultPin = '1234') {
+  return await updateStudentPin(id, defaultPin);
 }
 
-// 전체 학생 비밀번호 일괄 초기화
-function resetAllStudentPins(defaultPin = '1234') {
-  const data = loadData();
-  data.students.forEach(s => {
+async function resetAllStudentPins(defaultPin = '1234') {
+  if (supabase) {
+    try {
+      await supabase.from('students').update({ pin: String(defaultPin), updated_at: new Date().toISOString() }).neq('id', '');
+    } catch (e) {
+      console.error('Supabase resetAllStudentPins exception:', e.message);
+    }
+  }
+  const local = loadData();
+  local.students.forEach(s => {
     s.pin = String(defaultPin);
   });
-  saveData(data);
-  return data.students.length;
+  saveData(local);
+  return local.students.length;
 }
 
-function deleteStudent(id) {
-  const data = loadData();
-  const beforeLen = data.students.length;
-  data.students = data.students.filter(s => String(s.id) !== String(id));
-  saveData(data);
-  return data.students.length < beforeLen;
+async function deleteStudent(id) {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('students').delete().eq('id', id);
+      if (error) console.error('Supabase deleteStudent error:', error.message);
+    } catch (e) {
+      console.error('Supabase deleteStudent exception:', e.message);
+    }
+  }
+  const local = loadData();
+  const beforeLen = local.students.length;
+  local.students = local.students.filter(s => String(s.id) !== String(id));
+  saveData(local);
+  return local.students.length < beforeLen;
 }
 
-// 전체 학생 목록 동기화 (클라이언트/서버리스 상태 보존)
-function syncStudents(studentsList) {
+async function syncStudents(studentsList) {
   if (!Array.isArray(studentsList)) return [];
-  const data = loadData();
-  data.students = studentsList;
-  data.students.sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
-  saveData(data);
-  return data.students;
+
+  if (supabase && studentsList.length > 0) {
+    try {
+      const rows = studentsList.map(toStudentRow);
+      const { error } = await supabase.from('students').upsert(rows);
+      if (error) console.error('Supabase syncStudents upsert error:', error.message);
+    } catch (e) {
+      console.error('Supabase syncStudents exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  local.students = studentsList;
+  local.students.sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
+  saveData(local);
+  return local.students;
 }
 
-// 모든 학생 또는 특정 학생 시드머니 조정 및 잔고 초기화
-function resetStudentPortfolio(id = null, newSeed = null) {
-  const data = loadData();
-  const seed = newSeed !== null ? Number(newSeed) : data.settings.defaultSeedMoney;
+async function resetStudentPortfolio(id = null, newSeed = null) {
+  const settings = await getSettings();
+  const seed = newSeed !== null ? Number(newSeed) : settings.defaultSeedMoney;
 
   if (id) {
-    const student = data.students.find(s => s.id === id);
+    const student = await getStudentById(id);
     if (student) {
       student.seedMoney = seed;
       student.cash = seed;
       student.portfolio = {};
       student.tradeHistory = [];
+
+      if (supabase) {
+        try {
+          await supabase.from('students').update(toStudentRow(student)).eq('id', id);
+        } catch (e) {}
+      }
+
+      const local = loadData();
+      const idx = local.students.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        local.students[idx] = student;
+        saveData(local);
+      }
     }
   } else {
     // 전체 학생 초기화
-    data.students.forEach(student => {
+    const students = await getStudents();
+    students.forEach(student => {
       student.seedMoney = seed;
       student.cash = seed;
       student.portfolio = {};
       student.tradeHistory = [];
     });
+
+    if (supabase && students.length > 0) {
+      try {
+        const rows = students.map(toStudentRow);
+        await supabase.from('students').upsert(rows);
+      } catch (e) {}
+    }
+
+    const local = loadData();
+    local.students = students;
+    saveData(local);
   }
-  saveData(data);
   return true;
 }
 
 // ================== 거래 체결 시스템 ==================
 
-function executeTrade(studentId, tradeRequest) {
+async function executeTrade(studentId, tradeRequest) {
   const { type, stockCode, stockName, count, price } = tradeRequest;
   const tradeCount = parseInt(count, 10);
   const tradePrice = parseInt(price, 10);
@@ -301,8 +488,7 @@ function executeTrade(studentId, tradeRequest) {
     throw new Error('유효한 주가가 아닙니다.');
   }
 
-  const data = loadData();
-  const student = data.students.find(s => s.id === studentId);
+  const student = await getStudentById(studentId);
   if (!student) {
     throw new Error('학생 정보를 찾을 수 없습니다.');
   }
@@ -314,10 +500,9 @@ function executeTrade(studentId, tradeRequest) {
       throw new Error(`보유 현금이 부족합니다. (필요: ${totalAmount.toLocaleString()}원, 보유: ${student.cash.toLocaleString()}원)`);
     }
 
-    // 현금 차감
     student.cash -= totalAmount;
 
-    // 포트폴리오 갱신
+    student.portfolio = student.portfolio || {};
     if (!student.portfolio[stockCode]) {
       student.portfolio[stockCode] = {
         code: stockCode,
@@ -337,16 +522,15 @@ function executeTrade(studentId, tradeRequest) {
     }
 
   } else if (type === 'SELL') {
+    student.portfolio = student.portfolio || {};
     const existing = student.portfolio[stockCode];
     if (!existing || existing.count < tradeCount) {
       const currentCount = existing ? existing.count : 0;
       throw new Error(`보유 주식이 부족합니다. (보유: ${currentCount}주, 주문: ${tradeCount}주)`);
     }
 
-    // 현금 증가
     student.cash += totalAmount;
 
-    // 포트폴리오 차감
     const remainingCount = existing.count - tradeCount;
     if (remainingCount === 0) {
       delete student.portfolio[stockCode];
@@ -358,10 +542,9 @@ function executeTrade(studentId, tradeRequest) {
     throw new Error('올바르지 않은 거래 유형입니다. (BUY 또는 SELL)');
   }
 
-  // 거래 내역 기록
   const tradeLog = {
     id: 'tr-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-    type: type, // 'BUY' | 'SELL'
+    type: type,
     stockCode: stockCode,
     stockName: stockName,
     price: tradePrice,
@@ -373,7 +556,25 @@ function executeTrade(studentId, tradeRequest) {
   student.tradeHistory = student.tradeHistory || [];
   student.tradeHistory.unshift(tradeLog);
 
-  saveData(data);
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('students')
+        .update(toStudentRow(student))
+        .eq('id', studentId);
+      if (error) console.error('Supabase executeTrade error:', error.message);
+    } catch (e) {
+      console.error('Supabase executeTrade exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  const idx = local.students.findIndex(s => s.id === studentId);
+  if (idx !== -1) {
+    local.students[idx] = student;
+    saveData(local);
+  }
+
   return {
     student,
     tradeLog
@@ -405,9 +606,9 @@ function calculateStudentTotalAsset(student, stockPriceMap) {
   };
 }
 
-function getLeaderboard(stockPriceMap = {}) {
-  const data = loadData();
-  const ranked = data.students.map(s => {
+async function getLeaderboard(stockPriceMap = {}) {
+  const students = await getStudents();
+  const ranked = students.map(s => {
     const assetInfo = calculateStudentTotalAsset(s, stockPriceMap);
     return {
       id: s.id,
@@ -417,7 +618,6 @@ function getLeaderboard(stockPriceMap = {}) {
     };
   });
 
-  // 수익률 높은 순서 정렬
   ranked.sort((a, b) => b.profitRate - a.profitRate);
 
   return ranked.map((item, idx) => ({
@@ -428,62 +628,90 @@ function getLeaderboard(stockPriceMap = {}) {
 
 // ================== 관리자 및 종목 관리 ==================
 
-function getSettings() {
+async function getSettings() {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 'global')
+        .maybeSingle();
+      if (!error && data) {
+        const settings = toSettingsObj(data);
+        const local = loadData();
+        local.settings = settings;
+        saveData(local);
+        return settings;
+      }
+    } catch (e) {
+      console.error('Supabase getSettings exception:', e.message);
+    }
+  }
   const data = loadData();
   return data.settings;
 }
 
-function updateSettings(newSettings) {
-  const data = loadData();
-  data.settings = {
-    ...data.settings,
+async function updateSettings(newSettings) {
+  const current = await getSettings();
+  const updated = {
+    ...current,
     ...newSettings
   };
-  saveData(data);
-  return data.settings;
+
+  if (supabase) {
+    try {
+      const row = toSettingsRow(updated);
+      const { error } = await supabase.from('settings').upsert(row);
+      if (error) console.error('Supabase updateSettings error:', error.message);
+    } catch (e) {
+      console.error('Supabase updateSettings exception:', e.message);
+    }
+  }
+
+  const local = loadData();
+  local.settings = updated;
+  saveData(local);
+  return updated;
 }
 
-function verifyAdmin(password) {
-  const data = loadData();
-  return data.settings.adminPassword === password;
+async function verifyAdmin(password) {
+  const settings = await getSettings();
+  return settings.adminPassword === password;
 }
 
-// 종목 추가 / 수정 / 삭제
-function saveCustomStock(stockData) {
-  const data = loadData();
-  data.settings.customStocks = data.settings.customStocks || [];
+async function saveCustomStock(stockData) {
+  const settings = await getSettings();
+  settings.customStocks = settings.customStocks || [];
 
-  const index = data.settings.customStocks.findIndex(s => s.code === stockData.code);
+  const index = settings.customStocks.findIndex(s => s.code === stockData.code);
   if (index >= 0) {
-    data.settings.customStocks[index] = {
-      ...data.settings.customStocks[index],
+    settings.customStocks[index] = {
+      ...settings.customStocks[index],
       ...stockData
     };
   } else {
-    data.settings.customStocks.push(stockData);
+    settings.customStocks.push(stockData);
   }
 
-  saveData(data);
+  await updateSettings({ customStocks: settings.customStocks });
   return stockData;
 }
 
-// 커스텀 종목 가격 변동
-function updateCustomStockPrice(code, newPrice, reason = '', extraOpts = {}) {
-  const data = loadData();
-  data.settings.customStocks = data.settings.customStocks || [];
+async function updateCustomStockPrice(code, newPrice, reason = '', extraOpts = {}) {
+  const settings = await getSettings();
+  settings.customStocks = settings.customStocks || [];
 
   const targetPrice = parseInt(newPrice, 10);
   if (isNaN(targetPrice) || targetPrice <= 0) {
     throw new Error('올바른 가격을 입력해주세요.');
   }
 
-  let index = data.settings.customStocks.findIndex(s => s.code === code);
+  let index = settings.customStocks.findIndex(s => s.code === code);
   let stock;
 
   if (index >= 0) {
-    stock = data.settings.customStocks[index];
+    stock = settings.customStocks[index];
   } else {
-    // 만약 기존 KOSPI 종목을 수동 변경하는 경우 신규 커스텀 엔트리로 등록
     stock = {
       code,
       name: code,
@@ -492,8 +720,8 @@ function updateCustomStockPrice(code, newPrice, reason = '', extraOpts = {}) {
       basePrice: targetPrice,
       priceHistory: []
     };
-    data.settings.customStocks.push(stock);
-    index = data.settings.customStocks.length - 1;
+    settings.customStocks.push(stock);
+    index = settings.customStocks.length - 1;
   }
 
   const prevPrice = stock.manualPrice || stock.basePrice || targetPrice;
@@ -536,17 +764,15 @@ function updateCustomStockPrice(code, newPrice, reason = '', extraOpts = {}) {
 
   stock.priceHistory = stock.priceHistory || [];
   stock.priceHistory.push(historyItem);
-  // 최대 30개 이력 보존
   if (stock.priceHistory.length > 30) {
     stock.priceHistory.shift();
   }
 
-  data.settings.customStocks[index] = stock;
-  saveData(data);
+  settings.customStocks[index] = stock;
+  await updateSettings({ customStocks: settings.customStocks });
   return stock;
 }
 
-// 자동/랜덤 가격 변동 처리
 const RISE_NEWS = [
   '📈 신제품 판매 돌풍 및 실적 호조',
   '📈 대규모 공급 계약 체결 소식',
@@ -565,9 +791,8 @@ const FALL_NEWS = [
   '📉 업계 경쟁 심화로 인한 단가 인하 압박'
 ];
 
-function triggerRandomFluctuation(targetCode = null, force = false) {
-  const data = loadData();
-  const settings = data.settings || {};
+async function triggerRandomFluctuation(targetCode = null, force = false) {
+  const settings = await getSettings();
   const globalAuto = !!settings.autoFluctuateCustom;
   const globalInterval = Number(settings.fluctuationIntervalMinutes || 3);
   const globalRange = Number(settings.fluctuationRangePercent || 5);
@@ -580,7 +805,6 @@ function triggerRandomFluctuation(targetCode = null, force = false) {
     const stock = customStocks[i];
     if (stock.deleted) continue;
 
-    // 특정 종목 대상이거나, 자동 변동이 켜진 종목
     const isTarget = targetCode ? stock.code === targetCode : true;
     if (!isTarget) continue;
 
@@ -591,7 +815,6 @@ function triggerRandomFluctuation(targetCode = null, force = false) {
     const intervalMs = Math.max(0.5, intervalMin) * 60 * 1000;
     const lastFluct = stock.lastFluctuatedAt ? new Date(stock.lastFluctuatedAt).getTime() : 0;
 
-    // 주기 도달 여부 체크 (강제 실행이 아닐 경우)
     if (!force && (now - lastFluct < intervalMs)) {
       continue;
     }
@@ -599,49 +822,43 @@ function triggerRandomFluctuation(targetCode = null, force = false) {
     const range = stock.fluctuateRange ? Number(stock.fluctuateRange) : globalRange;
     const curPrice = stock.manualPrice || stock.price || 10000;
 
-    // 랜덤 퍼센트 생성 (-range ~ +range, 0 제외)
     let percentDelta = (Math.random() * (range * 2) - range);
     if (Math.abs(percentDelta) < 0.5) {
       percentDelta = percentDelta >= 0 ? 0.8 : -0.8;
     }
 
     let nextPrice = Math.round(curPrice * (1 + percentDelta / 100));
-    // 10원 단위로 반올림
     nextPrice = Math.max(100, Math.round(nextPrice / 10) * 10);
     if (nextPrice === curPrice) {
       nextPrice = percentDelta > 0 ? curPrice + 10 : Math.max(100, curPrice - 10);
     }
 
-    // 뉴스 사유 선택
     const newsList = nextPrice > curPrice ? RISE_NEWS : FALL_NEWS;
     const randomNews = newsList[Math.floor(Math.random() * newsList.length)];
 
     stock.lastFluctuatedAt = new Date().toISOString();
-    const updated = updateCustomStockPrice(stock.code, nextPrice, randomNews);
+    const updated = await updateCustomStockPrice(stock.code, nextPrice, randomNews);
     updatedStocks.push(updated);
   }
 
   return updatedStocks;
 }
 
-function deleteCustomStock(code) {
-  const data = loadData();
-  data.settings.customStocks = data.settings.customStocks || [];
-  // 소프트 삭제 또는 삭제 플래그
-  const index = data.settings.customStocks.findIndex(s => s.code === code);
+async function deleteCustomStock(code) {
+  const settings = await getSettings();
+  settings.customStocks = settings.customStocks || [];
+  const index = settings.customStocks.findIndex(s => s.code === code);
   if (index >= 0) {
-    data.settings.customStocks[index].deleted = true;
+    settings.customStocks[index].deleted = true;
   } else {
-    data.settings.customStocks.push({ code, deleted: true });
+    settings.customStocks.push({ code, deleted: true });
   }
-  saveData(data);
+  await updateSettings({ customStocks: settings.customStocks });
   return true;
 }
 
-function restoreDefaultStocks() {
-  const data = loadData();
-  data.settings.customStocks = [];
-  saveData(data);
+async function restoreDefaultStocks() {
+  await updateSettings({ customStocks: [] });
   return true;
 }
 

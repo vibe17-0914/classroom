@@ -6,9 +6,38 @@
       "name": "김민준",
       "pin": "1234",
       "seedMoney": 1000000,
-      "cash": 1500000,
-      "portfolio": {},
-      "tradeHistory": []
+      "cash": 1251000,
+      "portfolio": {
+        "005930": {
+          "code": "005930",
+          "name": "삼성전자",
+          "count": 1,
+          "avgPrice": 249000,
+          "totalSpent": 249000
+        }
+      },
+      "tradeHistory": [
+        {
+          "id": "tr-1789370780293-151",
+          "type": "SELL",
+          "stockCode": "005930",
+          "stockName": "삼성전자",
+          "price": 249000,
+          "count": 1,
+          "total": 249000,
+          "timestamp": "2026-09-14T07:26:20.293Z"
+        },
+        {
+          "id": "tr-1789370780268-872",
+          "type": "BUY",
+          "stockCode": "005930",
+          "stockName": "삼성전자",
+          "price": 249000,
+          "count": 2,
+          "total": 498000,
+          "timestamp": "2026-09-14T07:26:20.268Z"
+        }
+      ]
     },
     {
       "id": "stu-2",
@@ -168,6 +197,36 @@
           "timestamp": "2026-09-14T04:55:26.284Z"
         }
       ]
+    },
+    {
+      "id": "stu-1789370780350-6299",
+      "studentNo": 12,
+      "name": "홍길동",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-1789370780350-5208",
+      "studentNo": 13,
+      "name": "신사임당",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-1789370780350-7860",
+      "studentNo": 14,
+      "name": "이순신",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
     }
   ],
   "settings": {
@@ -184,28 +243,18 @@
         "name": "우리반 기분",
         "description": "",
         "isManualPrice": true,
-        "manualPrice": 3050,
+        "manualPrice": 3010,
         "deleted": false,
-        "previousPrice": 2950,
-        "change": 100,
-        "changeRate": 3.39,
-        "changeDirection": "RISE",
-        "lastReason": "📈 기관/외국인 매수세 대거 유입",
-        "lastUpdated": "2026-09-14T07:22:12.791Z",
+        "previousPrice": 3050,
+        "change": -40,
+        "changeRate": -1.31,
+        "changeDirection": "FALL",
+        "lastReason": "📉 시장 변동성 확대로 인한 투자 심리 위축",
+        "lastUpdated": "2026-09-14T07:25:12.939Z",
         "autoFluctuate": true,
         "fluctuateInterval": 3,
         "fluctuateRange": 10,
         "priceHistory": [
-          {
-            "date": "09/14 16:17",
-            "fullDate": "2026-09-14",
-            "close": 5160,
-            "open": 5440,
-            "high": 5440,
-            "low": 5160,
-            "volume": 92652,
-            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
-          },
           {
             "date": "09/14 16:17",
             "fullDate": "2026-09-14",
@@ -495,34 +544,34 @@
             "low": 2950,
             "volume": 63522,
             "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 16:25",
+            "fullDate": "2026-09-14",
+            "close": 3010,
+            "open": 3050,
+            "high": 3050,
+            "low": 3010,
+            "volume": 27921,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
           }
         ],
-        "lastFluctuatedAt": "2026-09-14T07:22:12.788Z"
+        "lastFluctuatedAt": "2026-09-14T07:25:12.939Z"
       },
       {
         "code": "CLASS01",
         "name": "우리반 협동조합",
         "description": "우리 반 학생들이 직접 만든 가상 모의 기업",
         "isManualPrice": true,
-        "manualPrice": 4680,
+        "manualPrice": 4840,
         "deleted": false,
-        "previousPrice": 4290,
-        "change": 390,
-        "changeRate": 9.09,
+        "previousPrice": 4680,
+        "change": 160,
+        "changeRate": 3.42,
         "changeDirection": "RISE",
-        "lastReason": "📈 대규모 공급 계약 체결 소식",
-        "lastUpdated": "2026-09-14T07:22:12.793Z",
+        "lastReason": "📈 신제품 판매 돌풍 및 실적 호조",
+        "lastUpdated": "2026-09-14T07:25:12.943Z",
         "priceHistory": [
-          {
-            "date": "09/14 16:17",
-            "fullDate": "2026-09-14",
-            "close": 3680,
-            "open": 3480,
-            "high": 3680,
-            "low": 3480,
-            "volume": 91256,
-            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
-          },
           {
             "date": "09/14 16:17",
             "fullDate": "2026-09-14",
@@ -812,12 +861,22 @@
             "low": 4290,
             "volume": 102111,
             "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 16:25",
+            "fullDate": "2026-09-14",
+            "close": 4840,
+            "open": 4680,
+            "high": 4840,
+            "low": 4680,
+            "volume": 35830,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
           }
         ],
         "autoFluctuate": true,
         "fluctuateInterval": 3,
         "fluctuateRange": 10,
-        "lastFluctuatedAt": "2026-09-14T07:22:12.793Z"
+        "lastFluctuatedAt": "2026-09-14T07:25:12.943Z"
       },
       {
         "code": "TEST01",
@@ -848,6 +907,18 @@
             "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
           }
         ]
+      },
+      {
+        "code": "035720",
+        "name": "카카오",
+        "description": "국내 대표 모바일 플랫폼 기업",
+        "isManualPrice": false,
+        "manualPrice": null,
+        "autoFluctuate": false,
+        "fluctuateInterval": 3,
+        "fluctuateRange": 5,
+        "lastFluctuatedAt": "2026-09-14T07:26:20.339Z",
+        "deleted": false
       }
     ]
   }
