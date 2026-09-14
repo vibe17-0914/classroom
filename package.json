@@ -1,0 +1,10 @@
+{
+  "name": "class-stock-market",
+  "version": "1.0.0",
+  "description": "우리 반 모의 주식 거래소 및 경제교육 플랫폼",
+  "scripts": {
+    "server": "cd server && node index.js",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build"
+  }
+}

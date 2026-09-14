@@ -1,0 +1,832 @@
+{
+  "students": [
+    {
+      "id": "stu-1",
+      "studentNo": 1,
+      "name": "김민준",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1500000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-2",
+      "studentNo": 2,
+      "name": "이서연",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-3",
+      "studentNo": 3,
+      "name": "박도윤",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-4",
+      "studentNo": 4,
+      "name": "정예은",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-5",
+      "studentNo": 5,
+      "name": "최현우",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-6",
+      "studentNo": 6,
+      "name": "강지민",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-7",
+      "studentNo": 7,
+      "name": "윤서진",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-8",
+      "studentNo": 8,
+      "name": "한수빈",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-9",
+      "studentNo": 9,
+      "name": "오준서",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-10",
+      "studentNo": 10,
+      "name": "송다은",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 1000000,
+      "portfolio": {},
+      "tradeHistory": []
+    },
+    {
+      "id": "stu-1789361710422-770",
+      "studentNo": 11,
+      "name": "굿보이",
+      "pin": "1234",
+      "seedMoney": 1000000,
+      "cash": 505580,
+      "portfolio": {
+        "666666": {
+          "code": "666666",
+          "name": "우리반 기분",
+          "count": 56,
+          "avgPrice": 8820,
+          "totalSpent": 493920
+        }
+      },
+      "tradeHistory": [
+        {
+          "id": "tr-1789366566349-6",
+          "type": "BUY",
+          "stockCode": "666666",
+          "stockName": "우리반 기분",
+          "price": 8820,
+          "count": 56,
+          "total": 493920,
+          "timestamp": "2026-09-14T06:16:06.349Z"
+        },
+        {
+          "id": "tr-1789361936956-439",
+          "type": "SELL",
+          "stockCode": "005930",
+          "stockName": "삼성전자",
+          "price": 250250,
+          "count": 2,
+          "total": 500500,
+          "timestamp": "2026-09-14T04:58:56.956Z"
+        },
+        {
+          "id": "tr-1789361726284-448",
+          "type": "BUY",
+          "stockCode": "005930",
+          "stockName": "삼성전자",
+          "price": 250500,
+          "count": 2,
+          "total": 501000,
+          "timestamp": "2026-09-14T04:55:26.284Z"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "adminPassword": "admin",
+    "defaultSeedMoney": 1500000,
+    "marketStatus": "OPEN",
+    "allowTrading": true,
+    "autoFluctuateCustom": false,
+    "fluctuationIntervalMinutes": 3,
+    "fluctuationRangePercent": 5,
+    "customStocks": [
+      {
+        "code": "666666",
+        "name": "우리반 기분",
+        "description": "",
+        "isManualPrice": true,
+        "manualPrice": 10370,
+        "deleted": false,
+        "previousPrice": 9580,
+        "change": 790,
+        "changeRate": 8.25,
+        "changeDirection": "RISE",
+        "lastReason": "📈 정부 정책 수혜 기대감 확대",
+        "lastUpdated": "2026-09-14T06:41:54.130Z",
+        "autoFluctuate": true,
+        "fluctuateInterval": 3,
+        "fluctuateRange": 10,
+        "priceHistory": [
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 7170,
+            "open": 6760,
+            "high": 7170,
+            "low": 6760,
+            "volume": 14047,
+            "reason": "📈 긍정적인 실적 전망 리포트 발표"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 6590,
+            "open": 7170,
+            "high": 7170,
+            "low": 6590,
+            "volume": 15666,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 6550,
+            "open": 6590,
+            "high": 6590,
+            "low": 6550,
+            "volume": 101360,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 7160,
+            "open": 6550,
+            "high": 7160,
+            "low": 6550,
+            "volume": 105705,
+            "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 6930,
+            "open": 7160,
+            "high": 7160,
+            "low": 6930,
+            "volume": 68877,
+            "reason": "📉 업계 경쟁 심화로 인한 단가 인하 압박"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 6790,
+            "open": 6930,
+            "high": 6930,
+            "low": 6790,
+            "volume": 83440,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6590,
+            "open": 6790,
+            "high": 6790,
+            "low": 6590,
+            "volume": 25342,
+            "reason": "📉 업계 경쟁 심화로 인한 단가 인하 압박"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 7010,
+            "open": 6590,
+            "high": 7010,
+            "low": 6590,
+            "volume": 22997,
+            "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 7370,
+            "open": 7010,
+            "high": 7370,
+            "low": 7010,
+            "volume": 93881,
+            "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 7670,
+            "open": 7370,
+            "high": 7670,
+            "low": 7370,
+            "volume": 56110,
+            "reason": "📈 긍정적인 실적 전망 리포트 발표"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 7790,
+            "open": 7670,
+            "high": 7790,
+            "low": 7670,
+            "volume": 58448,
+            "reason": "📈 정부 정책 수혜 기대감 확대"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 8020,
+            "open": 7790,
+            "high": 8020,
+            "low": 7790,
+            "volume": 30764,
+            "reason": "📈 신기술 특허 취득 및 시장 호평"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 8440,
+            "open": 8020,
+            "high": 8440,
+            "low": 8020,
+            "volume": 25164,
+            "reason": "📈 신기술 특허 취득 및 시장 호평"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 9000,
+            "open": 8440,
+            "high": 9000,
+            "low": 8440,
+            "volume": 51370,
+            "reason": "📈 정부 정책 수혜 기대감 확대"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 8200,
+            "open": 9000,
+            "high": 9000,
+            "low": 8200,
+            "volume": 83769,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 9000,
+            "open": 8200,
+            "high": 9000,
+            "low": 8200,
+            "volume": 20837,
+            "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 8400,
+            "open": 9000,
+            "high": 9000,
+            "low": 8400,
+            "volume": 47199,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 8000,
+            "open": 8400,
+            "high": 8400,
+            "low": 8000,
+            "volume": 41458,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 7930,
+            "open": 8000,
+            "high": 8000,
+            "low": 7930,
+            "volume": 31845,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 8490,
+            "open": 7930,
+            "high": 8490,
+            "low": 7930,
+            "volume": 84443,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 9290,
+            "open": 8490,
+            "high": 9290,
+            "low": 8490,
+            "volume": 99084,
+            "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 8830,
+            "open": 9290,
+            "high": 9290,
+            "low": 8830,
+            "volume": 20378,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 9080,
+            "open": 8830,
+            "high": 9080,
+            "low": 8830,
+            "volume": 78075,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 9970,
+            "open": 9080,
+            "high": 9970,
+            "low": 9080,
+            "volume": 66431,
+            "reason": "📈 긍정적인 실적 전망 리포트 발표"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 10090,
+            "open": 9970,
+            "high": 10090,
+            "low": 9970,
+            "volume": 54628,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 10840,
+            "open": 10090,
+            "high": 10840,
+            "low": 10090,
+            "volume": 13566,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 10200,
+            "open": 10840,
+            "high": 10840,
+            "low": 10200,
+            "volume": 65363,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 10040,
+            "open": 10200,
+            "high": 10200,
+            "low": 10040,
+            "volume": 67040,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 9580,
+            "open": 10040,
+            "high": 10040,
+            "low": 9580,
+            "volume": 64314,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 10370,
+            "open": 9580,
+            "high": 10370,
+            "low": 9580,
+            "volume": 72404,
+            "reason": "📈 정부 정책 수혜 기대감 확대"
+          }
+        ]
+      },
+      {
+        "code": "CLASS01",
+        "name": "우리반 협동조합",
+        "description": "우리 반 학생들이 직접 만든 가상 모의 기업",
+        "isManualPrice": true,
+        "manualPrice": 6040,
+        "deleted": false,
+        "previousPrice": 6430,
+        "change": -390,
+        "changeRate": -6.07,
+        "changeDirection": "FALL",
+        "lastReason": "📉 원자재 가격 급등으로 수익성 악화 우려",
+        "lastUpdated": "2026-09-14T06:41:54.132Z",
+        "priceHistory": [
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 8460,
+            "open": 9380,
+            "high": 9380,
+            "low": 8460,
+            "volume": 54353,
+            "reason": "📉 원자재 가격 급등으로 수익성 악화 우려"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 8390,
+            "open": 8460,
+            "high": 8460,
+            "low": 8390,
+            "volume": 107719,
+            "reason": "📉 원자재 가격 급등으로 수익성 악화 우려"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 8060,
+            "open": 8390,
+            "high": 8390,
+            "low": 8060,
+            "volume": 29896,
+            "reason": "📉 업계 경쟁 심화로 인한 단가 인하 압박"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 8360,
+            "open": 8060,
+            "high": 8360,
+            "low": 8060,
+            "volume": 75628,
+            "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 7890,
+            "open": 8360,
+            "high": 8360,
+            "low": 7890,
+            "volume": 67596,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:37",
+            "fullDate": "2026-09-14",
+            "close": 7550,
+            "open": 7890,
+            "high": 7890,
+            "low": 7550,
+            "volume": 94424,
+            "reason": "📉 업계 경쟁 심화로 인한 단가 인하 압박"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 7070,
+            "open": 7550,
+            "high": 7550,
+            "low": 7070,
+            "volume": 16302,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6610,
+            "open": 7070,
+            "high": 7070,
+            "low": 6610,
+            "volume": 56063,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6970,
+            "open": 6610,
+            "high": 6970,
+            "low": 6610,
+            "volume": 101930,
+            "reason": "📈 긍정적인 실적 전망 리포트 발표"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6480,
+            "open": 6970,
+            "high": 6970,
+            "low": 6480,
+            "volume": 36569,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6640,
+            "open": 6480,
+            "high": 6640,
+            "low": 6480,
+            "volume": 37925,
+            "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 15:38",
+            "fullDate": "2026-09-14",
+            "close": 6400,
+            "open": 6640,
+            "high": 6640,
+            "low": 6400,
+            "volume": 51801,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6010,
+            "open": 6400,
+            "high": 6400,
+            "low": 6010,
+            "volume": 81165,
+            "reason": "📉 원자재 가격 급등으로 수익성 악화 우려"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6430,
+            "open": 6010,
+            "high": 6430,
+            "low": 6010,
+            "volume": 20852,
+            "reason": "📈 신기술 특허 취득 및 시장 호평"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6500,
+            "open": 6430,
+            "high": 6500,
+            "low": 6430,
+            "volume": 18805,
+            "reason": "📈 긍정적인 실적 전망 리포트 발표"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6430,
+            "open": 6500,
+            "high": 6500,
+            "low": 6430,
+            "volume": 57269,
+            "reason": "📉 업계 경쟁 심화로 인한 단가 인하 압박"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6310,
+            "open": 6430,
+            "high": 6430,
+            "low": 6310,
+            "volume": 11831,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          },
+          {
+            "date": "09/14 15:39",
+            "fullDate": "2026-09-14",
+            "close": 6670,
+            "open": 6310,
+            "high": 6670,
+            "low": 6310,
+            "volume": 39959,
+            "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 6430,
+            "open": 6670,
+            "high": 6670,
+            "low": 6430,
+            "volume": 99226,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 7070,
+            "open": 6430,
+            "high": 7070,
+            "low": 6430,
+            "volume": 33661,
+            "reason": "📈 기관/외국인 매수세 대거 유입"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 6800,
+            "open": 7070,
+            "high": 7070,
+            "low": 6800,
+            "volume": 40076,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 6150,
+            "open": 6800,
+            "high": 6800,
+            "low": 6150,
+            "volume": 53319,
+            "reason": "📉 단기 급등에 따른 차익 실현 매물 출회"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 6200,
+            "open": 6150,
+            "high": 6200,
+            "low": 6150,
+            "volume": 50909,
+            "reason": "📈 대규모 공급 계약 체결 소식"
+          },
+          {
+            "date": "09/14 15:40",
+            "fullDate": "2026-09-14",
+            "close": 6090,
+            "open": 6200,
+            "high": 6200,
+            "low": 6090,
+            "volume": 70754,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6640,
+            "open": 6090,
+            "high": 6640,
+            "low": 6090,
+            "volume": 76945,
+            "reason": "📈 정부 정책 수혜 기대감 확대"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6170,
+            "open": 6640,
+            "high": 6640,
+            "low": 6170,
+            "volume": 68273,
+            "reason": "📉 주요 거래처 주문 축소 우려"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6220,
+            "open": 6170,
+            "high": 6220,
+            "low": 6170,
+            "volume": 53024,
+            "reason": "📈 신제품 판매 돌풍 및 실적 호조"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6660,
+            "open": 6220,
+            "high": 6660,
+            "low": 6220,
+            "volume": 74546,
+            "reason": "📈 신기술 특허 취득 및 시장 호평"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6430,
+            "open": 6660,
+            "high": 6660,
+            "low": 6430,
+            "volume": 27204,
+            "reason": "📉 글로벌 경기 불확실성 지속"
+          },
+          {
+            "date": "09/14 15:41",
+            "fullDate": "2026-09-14",
+            "close": 6040,
+            "open": 6430,
+            "high": 6430,
+            "low": 6040,
+            "volume": 55890,
+            "reason": "📉 원자재 가격 급등으로 수익성 악화 우려"
+          }
+        ],
+        "autoFluctuate": true,
+        "fluctuateInterval": 3,
+        "fluctuateRange": 10
+      },
+      {
+        "code": "TEST01",
+        "name": "자동변동테스트종목",
+        "description": "2분 주기 자동 변동 테스트",
+        "isManualPrice": true,
+        "manualPrice": 49330,
+        "autoFluctuate": true,
+        "fluctuateInterval": 2,
+        "fluctuateRange": 8,
+        "lastFluctuatedAt": "2026-09-14T06:11:13.760Z",
+        "deleted": true,
+        "previousPrice": 50000,
+        "change": -670,
+        "changeRate": -1.34,
+        "changeDirection": "FALL",
+        "lastReason": "📉 시장 변동성 확대로 인한 투자 심리 위축",
+        "lastUpdated": "2026-09-14T06:11:13.770Z",
+        "priceHistory": [
+          {
+            "date": "09/14 15:11",
+            "fullDate": "2026-09-14",
+            "close": 49330,
+            "open": 50000,
+            "high": 50000,
+            "low": 49330,
+            "volume": 70712,
+            "reason": "📉 시장 변동성 확대로 인한 투자 심리 위축"
+          }
+        ]
+      }
+    ]
+  }
+}
