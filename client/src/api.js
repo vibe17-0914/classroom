@@ -145,6 +145,20 @@ export async function deleteStudent(id) {
   return await res.json();
 }
 
+export async function syncStudentsWithServer(students) {
+  try {
+    const res = await fetch(`${API_BASE}/students/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ students })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('syncStudentsWithServer error:', err);
+    return { success: false };
+  }
+}
+
 export async function resetStudents(studentId = null, seedMoney = null) {
   const res = await fetch(`${API_BASE}/students/reset`, {
     method: 'POST',

@@ -15,6 +15,7 @@ export default function AdminPanel({
   stocks = [],
   students = [],
   adminSettings = {},
+  onStudentsUpdated,
   onDataChanged,
   showToast,
   onExitAdmin
@@ -207,6 +208,7 @@ export default function AdminPanel({
   };
 
   // 학생 개별 추가
+  // 학생 개별 추가
   const handleAddStudent = async (e) => {
     e.preventDefault();
     if (!newStudent.name.trim()) {
@@ -215,13 +217,22 @@ export default function AdminPanel({
     }
     try {
       const res = await addStudent(newStudent);
-      if (res.success) {
-        showToast(res.message, 'success');
-        setNewStudent({ studentNo: '', name: '', seedMoney: adminSettings.defaultSeedMoney || 1000000 });
-        onDataChanged();
+      if (res.success && res.student) {
+        showToast(res.message || '학생이 등록되었습니다.', 'success');
+        const nextList = [...students, res.student].sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
+        if (onStudentsUpdated) onStudentsUpdated(nextList);
+        setNewStudent({
+          studentNo: '',
+          name: '',
+          pin: '1234',
+          seedMoney: adminSettings.defaultSeedMoney || 1000000
+        });
+        if (onDataChanged) onDataChanged();
+      } else {
+        showToast(res.message || '학생 추가 실패', 'error');
       }
     } catch (err) {
-      showToast('학생 추가 실패', 'error');
+      showToast('학생 추가 처리 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -233,11 +244,15 @@ export default function AdminPanel({
     }
     try {
       const res = await batchAddStudents(batchText, batchSeed);
-      if (res.success) {
-        showToast(res.message, 'success');
+      if (res.success && res.students) {
+        showToast(res.message || '학생들이 등록되었습니다.', 'success');
+        const nextList = [...students, ...res.students].sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
+        if (onStudentsUpdated) onStudentsUpdated(nextList);
         setBatchText('');
         setShowBatchModal(false);
-        onDataChanged();
+        if (onDataChanged) onDataChanged();
+      } else {
+        showToast(res.message || '일괄 등록 실패', 'error');
       }
     } catch (err) {
       showToast('일괄 등록 실패', 'error');
@@ -249,28 +264,35 @@ export default function AdminPanel({
     e.preventDefault();
     if (!editingStudent) return;
     try {
-      const res = await updateStudent(editingStudent.id, editingStudent);
-      if (res.success) {
-        showToast('학생 정보가 수정되었습니다.', 'success');
-        setEditingStudent(null);
-        onDataChanged();
-      }
+      // 1. 화면에 즉시 반영 (0초 지연)
+      const nextList = students.map(s => String(s.id) === String(editingStudent.id) ? { ...s, ...editingStudent } : s);
+      if (onStudentsUpdated) onStudentsUpdated(nextList);
+      showToast('학생 정보가 수정되었습니다.', 'success');
+      const target = editingStudent;
+      setEditingStudent(null);
+
+      // 2. 서버에 저장
+      await updateStudent(target.id, target);
+      if (onDataChanged) onDataChanged();
     } catch (err) {
-      showToast('수정 실패', 'error');
+      showToast('수정 처리 중 오류가 발생했습니다.', 'error');
     }
   };
 
-  // 학생 삭제
+  // 학생 삭제 (즉시 화면 및 로컬스토리지에서 제거)
   const handleDeleteStudent = async (id, name) => {
-    if (!window.confirm(`'${name}' 학생을 명단에서 삭제하시겠습니까? (해당 학생의 모든 계좌 정보가 삭제됩니다)`)) return;
+    if (!window.confirm(`'${name}' 학생을 명단에서 삭제하시겠습니까?`)) return;
     try {
-      const res = await deleteStudent(id);
-      if (res.success) {
-        showToast('학생이 삭제되었습니다.', 'success');
-        onDataChanged();
-      }
+      // 1. 화면 및 로컬스토리지에서 즉시 삭제 (재등장 원천 차단)
+      const nextList = students.filter(s => String(s.id) !== String(id));
+      if (onStudentsUpdated) onStudentsUpdated(nextList);
+      showToast(`'${name}' 학생이 삭제되었습니다.`, 'success');
+
+      // 2. 서버 백엔드 동기화
+      await deleteStudent(id);
+      if (onDataChanged) onDataChanged();
     } catch (err) {
-      showToast('삭제 실패', 'error');
+      showToast('삭제 처리 중 오류가 발생했습니다.', 'error');
     }
   };
 
@@ -282,10 +304,19 @@ export default function AdminPanel({
     if (!window.confirm(msg)) return;
 
     try {
-      const res = await resetStudents(studentId, adminSettings.defaultSeedMoney || 1000000);
+      const defaultSeed = Number(adminSettings.defaultSeedMoney || 1000000);
+      if (studentId) {
+        const nextList = students.map(s => String(s.id) === String(studentId) ? { ...s, cash: defaultSeed, totalAsset: defaultSeed, profitRate: 0, portfolio: {} } : s);
+        if (onStudentsUpdated) onStudentsUpdated(nextList);
+      } else {
+        const nextList = students.map(s => ({ ...s, cash: defaultSeed, totalAsset: defaultSeed, profitRate: 0, portfolio: {} }));
+        if (onStudentsUpdated) onStudentsUpdated(nextList);
+      }
+
+      const res = await resetStudents(studentId, defaultSeed);
       if (res.success) {
         showToast(res.message, 'success');
-        onDataChanged();
+        if (onDataChanged) onDataChanged();
       }
     } catch (err) {
       showToast('초기화 실패', 'error');
@@ -296,13 +327,13 @@ export default function AdminPanel({
   const handleResetPin = async (id, name) => {
     if (!window.confirm(`'${name}' 학생의 비밀번호를 기본값 '1234'로 초기화하시겠습니까?`)) return;
     try {
-      const res = await resetStudentPin(id);
-      if (res.success) {
-        showToast(res.message, 'success');
-        onDataChanged();
-      } else {
-        showToast(res.message || '초기화 실패', 'error');
-      }
+      // 즉시 로컬 반영
+      const nextList = students.map(s => String(s.id) === String(id) ? { ...s, pin: '1234' } : s);
+      if (onStudentsUpdated) onStudentsUpdated(nextList);
+      showToast(`'${name}' 학생의 비밀번호가 '1234'로 초기화되었습니다.`, 'success');
+
+      await resetStudentPin(id);
+      if (onDataChanged) onDataChanged();
     } catch (err) {
       showToast('비밀번호 초기화 처리 오류', 'error');
     }
@@ -312,13 +343,13 @@ export default function AdminPanel({
   const handleResetAllPins = async () => {
     if (!window.confirm("모든 학생의 비밀번호를 기본값 '1234'로 일괄 초기화하시겠습니까?")) return;
     try {
-      const res = await resetAllStudentPins();
-      if (res.success) {
-        showToast(res.message, 'success');
-        onDataChanged();
-      } else {
-        showToast('일괄 초기화 실패', 'error');
-      }
+      // 즉시 로컬 반영
+      const nextList = students.map(s => ({ ...s, pin: '1234' }));
+      if (onStudentsUpdated) onStudentsUpdated(nextList);
+      showToast("전체 학생의 비밀번호가 '1234'로 일괄 초기화되었습니다.", 'success');
+
+      await resetAllStudentPins();
+      if (onDataChanged) onDataChanged();
     } catch (err) {
       showToast('비밀번호 일괄 초기화 오류', 'error');
     }

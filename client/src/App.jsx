@@ -13,12 +13,19 @@ import AdminPanel from './components/AdminPanel.jsx';
 import StudentLogin from './components/StudentLogin.jsx';
 import ChangePinModal from './components/ChangePinModal.jsx';
 import {
-  fetchStocks, fetchStudents, fetchStudent, loginAdmin, fetchAdminSettings
+  fetchStocks, fetchStudents, fetchStudent, loginAdmin, fetchAdminSettings, syncStudentsWithServer
 } from './api.js';
 
 export default function App() {
   const [stocks, setStocks] = useState([]);
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState(() => {
+    try {
+      const cached = localStorage.getItem('classroom_saved_students');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [currentStudentId, setCurrentStudentId] = useState(() => {
     return localStorage.getItem('classroom_student_id') || '';
   });
@@ -50,23 +57,48 @@ export default function App() {
     }, 3500);
   };
 
+  // 학생 명단 즉시 갱신 및 로컬/서버 완전 동기화 함수
+  const updateStudentsList = (newList) => {
+    const sorted = [...newList].sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
+    setStudents(sorted);
+    localStorage.setItem('classroom_saved_students', JSON.stringify(sorted));
+    syncStudentsWithServer(sorted);
+  };
+
   // 초기 데이터 로딩
   const loadData = async () => {
     setLoadingStocks(true);
     try {
-      const [stockData, studentList, settings] = await Promise.all([
+      const [stockData, serverStudents, settings] = await Promise.all([
         fetchStocks(),
         fetchStudents(),
         fetchAdminSettings()
       ]);
       setStocks(stockData);
-      setStudents(studentList);
       setAdminSettings(settings);
+
+      // 로컬 스토리지에 관리자가 이미 수정한 명단이 있는지 확인
+      let effectiveStudents = serverStudents;
+      try {
+        const localSaved = localStorage.getItem('classroom_saved_students');
+        if (localSaved) {
+          const parsed = JSON.parse(localSaved);
+          // 관리자가 로컬에서 명단을 수정한 이력이 있는 경우 로컬 명단 우선 적용
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            effectiveStudents = parsed;
+            // 서버리스 인스턴스에도 로컬 최신 명단을 동기화
+            syncStudentsWithServer(effectiveStudents);
+          }
+        }
+      } catch (e) {}
+
+      setStudents(effectiveStudents);
+      localStorage.setItem('classroom_saved_students', JSON.stringify(effectiveStudents));
 
       // 기존 로그인 정보가 유효한지 검증
       const savedId = localStorage.getItem('classroom_student_id');
       if (savedId) {
-        const found = studentList.find(s => s.id === savedId);
+        const found = effectiveStudents.find(s => s.id === savedId);
         if (found) {
           setCurrentStudentId(savedId);
         } else {
@@ -325,6 +357,7 @@ export default function App() {
                 stocks={stocks}
                 students={students}
                 adminSettings={adminSettings}
+                onStudentsUpdated={updateStudentsList}
                 onDataChanged={() => {
                   loadData();
                   refreshCurrentStudent();

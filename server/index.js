@@ -10,6 +10,14 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// API 캐싱 방지 헤더 설정 (Vercel 및 브라우저 캐시로 인한 데이터 불일치 방지)
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 // ================== 주식 시세 관련 API ==================
 
 // 1. 전체 종목 목록 및 실시간 주가 조회
@@ -374,6 +382,20 @@ app.delete('/api/students/:id', (req, res) => {
     res.json({ success, message: success ? '학생이 삭제되었습니다.' : '학생을 찾을 수 없습니다.' });
   } catch (err) {
     res.status(500).json({ success: false, message: '학생 삭제에 실패했습니다.' });
+  }
+});
+
+// 학생 목록 일괄 동기화 (클라이언트 상태 보존 및 Vercel 다중 인스턴스 동기화)
+app.post('/api/students/sync', (req, res) => {
+  try {
+    const { students } = req.body;
+    if (!Array.isArray(students)) {
+      return res.status(400).json({ success: false, message: '학생 배열이 필요합니다.' });
+    }
+    const synced = db.syncStudents(students);
+    res.json({ success: true, count: synced.length, students: synced, message: '학생 목록이 동기화되었습니다.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: '학생 목록 동기화 실패' });
   }
 });
 

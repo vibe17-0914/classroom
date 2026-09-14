@@ -32,38 +32,61 @@ const DEFAULT_SETTINGS = {
   customStocks: []
 };
 
+let globalData = global._classroomData || null;
+
 // DB 초기화 및 읽기
 function loadData() {
+  if (globalData) {
+    return globalData;
+  }
   try {
-    if (!fs.existsSync(DATA_FILE)) {
-      if (process.env.VERCEL && fs.existsSync(BUNDLED_FILE)) {
-        try {
-          const bundledContent = fs.readFileSync(BUNDLED_FILE, 'utf-8');
-          fs.writeFileSync(DATA_FILE, bundledContent, 'utf-8');
-          return JSON.parse(bundledContent);
-        } catch (e) {}
-      }
-      const initialData = {
-        students: DEFAULT_STUDENTS,
-        settings: DEFAULT_SETTINGS
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+      const parsed = JSON.parse(raw);
+      globalData = {
+        students: Array.isArray(parsed.students) ? parsed.students : DEFAULT_STUDENTS,
+        settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) }
       };
-      saveData(initialData);
-      return initialData;
+      global._classroomData = globalData;
+      return globalData;
     }
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    return {
-      students: parsed.students || DEFAULT_STUDENTS,
-      settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) }
+
+    if (process.env.VERCEL && fs.existsSync(BUNDLED_FILE)) {
+      try {
+        const bundledContent = fs.readFileSync(BUNDLED_FILE, 'utf-8');
+        const parsed = JSON.parse(bundledContent);
+        globalData = {
+          students: Array.isArray(parsed.students) ? parsed.students : DEFAULT_STUDENTS,
+          settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) }
+        };
+        global._classroomData = globalData;
+        saveData(globalData);
+        return globalData;
+      } catch (e) {}
+    }
+
+    const initialData = {
+      students: DEFAULT_STUDENTS,
+      settings: DEFAULT_SETTINGS
     };
+    globalData = initialData;
+    global._classroomData = globalData;
+    saveData(initialData);
+    return initialData;
   } catch (err) {
     console.error('Error loading DB file:', err);
-    return { students: DEFAULT_STUDENTS, settings: DEFAULT_SETTINGS };
+    if (!globalData) {
+      globalData = { students: DEFAULT_STUDENTS, settings: DEFAULT_SETTINGS };
+      global._classroomData = globalData;
+    }
+    return globalData;
   }
 }
 
 // DB 저장
 function saveData(data) {
+  globalData = data;
+  global._classroomData = data;
   try {
     const dir = path.dirname(DATA_FILE);
     if (!fs.existsSync(dir)) {
@@ -223,9 +246,19 @@ function resetAllStudentPins(defaultPin = '1234') {
 function deleteStudent(id) {
   const data = loadData();
   const beforeLen = data.students.length;
-  data.students = data.students.filter(s => s.id !== id);
+  data.students = data.students.filter(s => String(s.id) !== String(id));
   saveData(data);
   return data.students.length < beforeLen;
+}
+
+// 전체 학생 목록 동기화 (클라이언트/서버리스 상태 보존)
+function syncStudents(studentsList) {
+  if (!Array.isArray(studentsList)) return [];
+  const data = loadData();
+  data.students = studentsList;
+  data.students.sort((a, b) => (Number(a.studentNo) || 0) - (Number(b.studentNo) || 0));
+  saveData(data);
+  return data.students;
 }
 
 // 모든 학생 또는 특정 학생 시드머니 조정 및 잔고 초기화
@@ -621,6 +654,7 @@ module.exports = {
   batchAddStudents,
   updateStudent,
   deleteStudent,
+  syncStudents,
   resetStudentPortfolio,
   executeTrade,
   calculateStudentTotalAsset,
